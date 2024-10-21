@@ -42,7 +42,7 @@ df = df_filtered
 
 
 
-product_cat = st.multiselect("Pick which product categories",
+product_cat = st.multiselect("Pick which product categories you want to examine",
                             list(df["Product Group"].unique())[::-1],
                              None)
 
@@ -50,34 +50,35 @@ product_cat = st.multiselect("Pick which product categories",
 # st.dataframe(product_cat)
 # st.dataframe(df["Product Group"])
 
+df = df[df["Product Group"].isin(product_cat)]
+
 if product_cat:
-    chart_data = df[df["Product Group"].isin(product_cat)]
-    # chart_data = chart_data[chart_data['year'].between(date_range[0], date_range[1])]
-    # chart_data['year'] = chart_data['year'].astype(str)
 
     # st.write(len(chart_data))
 
-# Create 5 columns where the last 4 are merged into one
-col1, col2 = st.columns([1, 4])  # The first column is narrow, the second one spans the width of four columns
+    st.subheader(f"Showing data from the period between {start_date} and {end_date}")
 
-with col1:
-    # Count the occurrences of each name and creates a list of names and counts
-    chart_data = chart_data['Created By'].value_counts()
-    st.dataframe(chart_data)
+    # Create 5 columns where the last 4 are merged into one
+    col1, col2 = st.columns([1, 4])  # The first column is narrow, the second one spans the width of four columns
+
+    with col1:
+        # Count the occurrences of each name and creates a list of names and counts
+        chart_data = df['Created By'].value_counts()
+        st.dataframe(chart_data)
 
 
 
-# Convert to a DataFrame for plotting
-chart_data = chart_data.reset_index()
-# st.dataframe(chart_data)
-        #
-        # name_counts_df.columns = ['Created By', 'count']
-with col2:
-    # Display the bar chart in Streamlit
-    # st.write("Name Occurrences:")
-    st.bar_chart(chart_data.set_index('Created By'))
+    # Convert to a DataFrame for plotting
+    chart_data = chart_data.reset_index()
+    # st.dataframe(chart_data)
+            #
+            # name_counts_df.columns = ['Created By', 'count']
+    with col2:
+        # Display the bar chart in Streamlit
+        # st.write("Name Occurrences:")
+        st.bar_chart(chart_data.set_index('Created By'))
 
-st.dataframe(df)
+    st.dataframe(df)
 
 #
 # # List all column names
