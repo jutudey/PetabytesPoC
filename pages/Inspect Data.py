@@ -14,10 +14,10 @@ st.title("Inspect the Invoice Lines data")
 
 df = functions.load_cvs_data(invoice_lines_path)
 
-st.data_editor(df)
+st.data_editor(df, height=700)
 
-st.title("Inspect the procedures data")
-
-df = functions.load_cvs_data(procedures_path)
-
-st.data_editor(df)
+# st.title("Inspect the procedures data")
+#
+# df = functions.load_cvs_data(procedures_path)
+#
+# st.data_editor(df)
