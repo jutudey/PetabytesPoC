@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
 from PIL import Image
+import re
 
 
 def set_page_definitition():
@@ -20,6 +21,19 @@ def set_page_definitition():
 
 def load_cvs_data(file_path):
   df = pd.read_csv(file_path, index_col=0)
+
+
+
+
+
+  # for column in df.columns:
+  #   # Try to convert the column to datetime using the specified format
+  #   try:
+  #     df[column] = pd.to_datetime(df[column], format='%d.%m.%Y', errors='raise')
+  #     print(f"Converted column '{column}' to datetime")
+  #   except (ValueError, TypeError):
+  #     # If conversion fails, skip the column
+  #     print(f"Column '{column}' does not match the date format and was skipped.")
 
   # # Identify blank rows (rows where all cells are NaN)
   # blank_rows = df.isnull().all(axis=1)
