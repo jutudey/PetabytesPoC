@@ -25,20 +25,16 @@ st.sidebar.subheader("Set the date range")
 
 
 # select date range
-start_date = st.sidebar.date_input("Start date",min_value=datetime.date(2023,12,4), format="MM.DD.YYYY")
+start_date = st.sidebar.date_input("Start date",min_value=datetime.date(2023,12,4), format="DD.MM.YYYY")
 # st.write("start date", start_date)
-end_date = st.sidebar.date_input("End date",format="MM.DD.YYYY")
+end_date = st.sidebar.date_input("End date",format="DD.MM.YYYY")
 # st.write("end date", end_date)
 
 # Convert start_date and end_date to pandas Timestamps
 start_date = pd.to_datetime(start_date)
 end_date = pd.to_datetime(end_date)
 
-# Filter the DataFrame to only include rows between the start and end dates
-df_filtered = df[(df['Invoice Date'] >= start_date) & (df['Invoice Date'] <= end_date)]
-df = df_filtered
-# Display the filtered DataFrame
-# st.dataframe(df_filtered)
+
 
 
 
@@ -51,6 +47,12 @@ product_cat = st.multiselect("Pick which product categories you want to examine"
 # st.dataframe(df["Product Group"])
 
 df = df[df["Product Group"].isin(product_cat)]
+
+# Filter the DataFrame to only include rows between the start and end dates
+df_filtered = df[(df['Invoice Date'] >= start_date) & (df['Invoice Date'] <= end_date)]
+df = df_filtered
+# Display the filtered DataFrame
+# st.dataframe(df_filtered)
 
 if product_cat:
 
