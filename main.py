@@ -6,7 +6,6 @@ import functions
 functions.set_page_definitition()
 st.title("Petabytes PoC")
 
-
 allInvoicelines = "data/Invoice+Lines-2024-10-21-15-29-05.csv"
 df = functions.load_cvs_data(allInvoicelines)
 
@@ -21,14 +20,42 @@ df = df[df['Client Contact Code'] != 'ezyVet']
 # st.dataframe(df)
 # st.write(len(df))
 
-st.sidebar.subheader("Set the date range")
+st.sidebar.subheader("Select a date filter")
 
+# Predefined date range options
+date_options = ["Today", "This Week", "This Month", "This Quarter", "This Year", "Last Month", "Custom Range"]
+selected_option = st.sidebar.selectbox("Pick a date range", date_options)
 
-# select date range
-start_date = st.sidebar.date_input("Start date",min_value=datetime.date(2023,12,4), format="DD.MM.YYYY")
-# st.write("start date", start_date)
-end_date = st.sidebar.date_input("End date",format="DD.MM.YYYY")
-# st.write("end date", end_date)
+# Get today's date
+today = datetime.date.today()
+
+# Set default start and end dates based on the selected option
+if selected_option == "Today":
+    start_date = today
+    end_date = today
+elif selected_option == "This Week":
+    start_date = today - datetime.timedelta(days=today.weekday())  # Start of the week (Monday)
+    end_date = today
+elif selected_option == "This Month":
+    start_date = today.replace(day=1)  # First day of this month
+    end_date = today
+elif selected_option == "This Quarter":
+    current_month = today.month
+    quarter_start_month = current_month - (current_month - 1) % 3
+    start_date = today.replace(month=quarter_start_month, day=1)
+    end_date = today
+elif selected_option == "This Year":
+    start_date = today.replace(month=1, day=1)  # First day of this year
+    end_date = today
+elif selected_option == "Last Month":
+    first_day_of_this_month = today.replace(day=1)
+    start_date = first_day_of_this_month - datetime.timedelta(days=1)  # Last day of the previous month
+    start_date = start_date.replace(day=1)  # First day of the previous month
+    end_date = first_day_of_this_month - datetime.timedelta(days=1)
+else:
+    # Custom date range
+    start_date = st.sidebar.date_input("Start date", min_value=datetime.date(2023, 12, 4), format="DD.MM.YYYY")
+    end_date = st.sidebar.date_input("End date", format="DD.MM.YYYY")
 
 # Convert start_date and end_date to pandas Timestamps
 start_date = pd.to_datetime(start_date)
