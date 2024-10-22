@@ -62,17 +62,18 @@ df = df_filtered
 # st.dataframe(df_filtered)
 
 if product_cat:
+    chart_data = df['Created By'].value_counts()
+    chart_items = len(df)
+    chart_start_date = start_date.strftime("%B %d, %Y")
+    chart_end_date = end_date.strftime("%B %d, %Y")
 
-    # st.write(len(chart_data))
-
-    st.subheader(f"Showing data from the period between {start_date} and {end_date}")
+    st.subheader(f"Showing data based on {chart_items} invoices lines from the period between {chart_start_date} and {chart_end_date}")
 
     # Create 5 columns where the last 4 are merged into one
     col1, col2 = st.columns([1, 4])  # The first column is narrow, the second one spans the width of four columns
 
     with col1:
         # Count the occurrences of each name and creates a list of names and counts
-        chart_data = df['Created By'].value_counts()
         st.dataframe(chart_data)
 
 
