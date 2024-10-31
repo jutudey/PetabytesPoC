@@ -81,10 +81,21 @@ df = df_filtered
 # st.dataframe(df_filtered)
 
 if product_cat:
+    # by count
     chart_data = df['Created By'].value_counts()
     chart_items = len(df)
     chart_start_date = start_date.strftime("%B %d, %Y")
     chart_end_date = end_date.strftime("%B %d, %Y")
+
+    # by Sum
+    # Group by 'Created By' and aggregate the sum of 'Standard Price(incl)'
+    chart_data2 = df.groupby('Created By')['Standard Price(incl)'].sum().reset_index(). round(2)
+
+    # Rename columns to be more descriptive
+    chart_data2.columns = ['Created By', 'Total internal cost']
+
+    # Display the table in Streamlit
+    # st.dataframe(chart_data2)
 
     st.subheader(f"Showing data based on {chart_items} invoices lines from the period between {chart_start_date} and {chart_end_date}")
 
@@ -94,7 +105,6 @@ if product_cat:
     with col1:
         # Count the occurrences of each name and creates a list of names and counts
         st.dataframe(chart_data)
-
 
 
     # Convert to a DataFrame for plotting
@@ -107,7 +117,20 @@ if product_cat:
         # st.write("Name Occurrences:")
         st.bar_chart(chart_data.set_index('Created By'))
 
-    st.dataframe(df)
+    col1, col2 = st.columns([2, 4])  # The first column is narrow, the second one spans the width of four columns
+
+    with col1:
+        # Reset the index so that it's not included
+        chart_data2_reset = chart_data2.reset_index(drop=True)
+
+        # Display the DataFrame without index in Streamlit
+        st.dataframe(chart_data2_reset)
+
+    with col2:
+        # Use the original DataFrame for plotting without resetting the index again
+        st.bar_chart(chart_data2.set_index('Created By'))
+
+    st.dataframe(df_filtered)
 
 #
 # # List all column names
