@@ -65,14 +65,14 @@ end_date = pd.to_datetime(end_date)
 
 
 product_cat = st.multiselect("Pick which product categories you want to examine",
-                            list(df["Product Group"].unique())[::-1],
+                            list(df["reporting_categories"].unique())[::-1],
                              None)
 
 
 # st.dataframe(product_cat)
-# st.dataframe(df["Product Group"])
+# st.dataframe(df["reporting_categories"])
 
-df = df[df["Product Group"].isin(product_cat)]
+df = df[df["reporting_categories"].isin(product_cat)]
 
 # Filter the DataFrame to only include rows between the start and end dates
 df_filtered = df[(df['Invoice Date'] >= start_date) & (df['Invoice Date'] <= end_date)]

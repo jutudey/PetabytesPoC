@@ -140,6 +140,25 @@ def get_date_range(selected_option, custom_start=None, custom_end=None):
 
     return start_date, end_date
 
+def load_newest_file(filename_prefix):
+    folder_path = "data"
+    try:
+        files = os.listdir(folder_path)
+        invoice_files = [file for file in files if file.startswith(filename_prefix)]
+        if invoice_files:
+            highest_file = max(invoice_files)
+            print(highest_file)
+            file_path = os.path.join(folder_path, highest_file)
+            if highest_file.endswith(".csv"):
+                df = pd.read_csv(file_path, low_memory=False)
+                return df
+            elif highest_file.endswith(".xlsx"):
+                df = pd.read_excel(file_path)
+                return df
+    except FileNotFoundError:
+        print(f"The folder '{folder_path}' does not exist.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 
 @st.cache_data
