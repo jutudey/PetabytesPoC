@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import datetime
 import functions
+import altair as alt
 
 functions.set_page_definitition()
 st.title("📊  Petabytes PoC")
@@ -12,56 +13,49 @@ df = functions.load_cvs_data(allInvoicelines)
 # Convert 'Invoice Date' from string to datetime format
 df['Invoice Date'] = pd.to_datetime(df['Invoice Date'], format='%d-%m-%Y')
 
+# Data Cleaning
 df = df[df['Type'] != 'Header']
 df = df[df['Product Name'] != 'Subscription Fee']
 df = df[df['Product Name'] != 'Cancellation Fee']
 df = df[df['Client Contact Code'] != 'ezyVet']
-# df=df2
-# st.dataframe(df)
-# st.write(len(df))
 
-
-medication_groups = ["Medication - Oral", "Medication - Injectable", "Medication - Flea & Worm", "Medication - Topical", "Anaesthesia", "Medication - Miscategorised ", "Medication - Other"]
-vaccination_groups = ["Vaccinations", "Vaccine Stock"]
-consultations = ["Consultations"]
-procedures_groups = ["Procedures", "Dental", "Surgery", "Fluids  Therapy"]
-diagnostics_groups = ["Diagnostic Procedures", "Diagnostic Imaging"]
-lab_work_groups = ["Idexx External", "Idexx In-House"]
-hospitalisation = ["Boarding", "Hospitalisation"]
-consumables = ["Consumables", "Surgery Consumables", "Suture Material", "Bandages"]
-service_fee = ["Service Fee"]
-pts = ['Euthanasia & Cremation', 'Individual Cremations']
-
-# Data Cleaning
 # Change miscategorised Meloxicam and Methadone away from Consultations
 df['Product Group'] = df.apply(lambda row: "Medication - Miscategorised " if row['Product Name'] == "(1) Includes: Meloxicam and Methadone" else row['Product Group'], axis=1)
 
 # Set 'Medication' for medication groups
+medication_groups = ["Medication - Oral", "Medication - Injectable", "Medication - Flea & Worm", "Medication - Topical", "Anaesthesia", "Medication - Miscategorised", "Medication - Other"]
 df['reporting_categories'] = df['Product Group'].apply(lambda x: "Medication" if x in medication_groups else None)
 
 # Set 'other categories' , without overwriting existing non-null values
+vaccination_groups = ["Vaccinations", "Vaccine Stock"]
 df['reporting_categories'] = df.apply(lambda row: "Vaccinations" if row['Product Group'] in vaccination_groups else row['reporting_categories'], axis=1)
+consultations = ["Consultations"]
 df['reporting_categories'] = df.apply(lambda row: "Consultations" if row['Product Group'] in consultations else row['reporting_categories'], axis=1)
-df['reporting_categories'] = df.apply(lambda row: "Diagnostic" if row['Product Group'] in diagnostics_groups else row['reporting_categories'], axis=1)
+procedures_groups = ["Procedures", "Dental", "Surgery", "Fluids  Therapy"]
 df['reporting_categories'] = df.apply(lambda row: "Procedures" if row['Product Group'] in procedures_groups else row['reporting_categories'], axis=1)
+diagnostics_groups = ["Diagnostic Procedures", "Diagnostic Imaging"]
+df['reporting_categories'] = df.apply(lambda row: "Diagnostic" if row['Product Group'] in diagnostics_groups else row['reporting_categories'], axis=1)
+lab_work_groups = ["Idexx External", "Idexx In-House"]
 df['reporting_categories'] = df.apply(lambda row: "Lab Work" if row['Product Group'] in lab_work_groups else row['reporting_categories'], axis=1)
+hospitalisation = ["Boarding", "Hospitalisation"]
 df['reporting_categories'] = df.apply(lambda row: "Hospitalisation" if row['Product Group'] in hospitalisation else row['reporting_categories'], axis=1)
+consumables = ["Consumables", "Surgery Consumables", "Suture Material", "Bandages"]
 df['reporting_categories'] = df.apply(lambda row: "Consumables" if row['Product Group'] in consumables else row['reporting_categories'], axis=1)
+service_fee = ["Service Fee"]
 df['reporting_categories'] = df.apply(lambda row: "Service Fee" if row['Product Group'] in service_fee else row['reporting_categories'], axis=1)
-df['reporting_categories'] = df.apply(lambda row: "PTS & Creamations" if row['Product Group'] in pts else row['reporting_categories'], axis=1)
+pts = ["Euthanasia & Cremation", "Individual Cremations"]
+df['reporting_categories'] = df.apply(lambda row: "PTS & Cremations" if row['Product Group'] in pts else row['reporting_categories'], axis=1)
 df['reporting_categories'] = df['reporting_categories'].fillna("Misc")
 
-
-st.sidebar.subheader("🗓️  Date Range")
+st.sidebar.subheader("📃  Date Range")
 
 date_options = [
     "Custom Range", "Today", "This Week", "This Week-to-date", "This Month", "This Month-to-date",
     "This Quarter", "This Quarter-to-date", "This Year", "This Year-to-date", "This Year-to-last-month",
     "Yesterday", "Last Week", "Last Month",
     "Last Quarter", "Last Year",
-    "Last 30 Days", "Last 60 Days", "Last 90 Days", "Last 365 Days",
-    # "Next Week", "Next 4 Weeks", "Next Month", "Next Quarter", "Next Year"
-    ]
+    "Last 30 Days", "Last 60 Days", "Last 90 Days", "Last 365 Days"
+]
 selected_option = st.sidebar.selectbox("Select a date filter", date_options)
 
 # Get start and end dates based on the selected option
@@ -81,71 +75,50 @@ st.sidebar.subheader("📦  Products")
 product_cat = st.sidebar.multiselect(
     "Select Product Category",
     sorted(df["reporting_categories"].unique()),
-    None
+    default=None
 )
 
-
-df = df[df["reporting_categories"].isin(product_cat)]
+# Filter by product categories if any are selected
+if product_cat:
+    df = df[df["reporting_categories"].isin(product_cat)]
 
 # Filter the DataFrame to only include rows between the start and end dates
 df_filtered = df[(df['Invoice Date'] >= start_date) & (df['Invoice Date'] <= end_date)]
-df = df_filtered
+
 # Display the filtered DataFrame
-# st.dataframe(df_filtered)
+if not df_filtered.empty:
+    st.subheader(f"Showing data based on {len(df_filtered)} invoice lines from the period between {start_date.strftime('%B %d, %Y')} and {end_date.strftime('%B %d, %Y')}")
 
-if product_cat:
-    # by count
-    chart_data = df['Created By'].value_counts()
-    chart_items = len(df)
-    chart_start_date = start_date.strftime("%B %d, %Y")
-    chart_end_date = end_date.strftime("%B %d, %Y")
-
-    # by Sum
-    # Group by 'Created By' and aggregate the sum of 'Standard Price(incl)'
-    chart_data2 = df.groupby('Created By')['Standard Price(incl)'].sum().reset_index(). round(2)
-
-    # Rename columns to be more descriptive
-    chart_data2.columns = ['Created By', 'Total internal cost']
-
-    # Display the table in Streamlit
-    # st.dataframe(chart_data2)
-
-    st.subheader(f"Showing data based on {chart_items} invoices lines from the period between {chart_start_date} and {chart_end_date}")
-
-    # Create tabs
+    # Create tabs for different aggregations
     tab1, tab2 = st.tabs(["By Count", "By Internal Cost"])
 
     with tab1:
-        # Create 5 columns where the last 4 are merged into one
-        col1, col2 = st.columns([1, 4])  # The first column is narrow, the second one spans the width of four columns
+        chart_data = df_filtered.groupby(['Created By', 'reporting_categories']).size().reset_index(name='Count')
+        chart = alt.Chart(chart_data).mark_bar().encode(
+            x=alt.X('Created By:N', title='Created By'),
+            y=alt.Y('Count:Q', title='Count'),
+            color='reporting_categories:N'
+        ).properties(
+            width=600,
+            height=400
+        )
 
-        with col1:
-            # Count the occurrences of each name and creates a list of names and counts
-            st.dataframe(chart_data)
-
-
-        # Convert to a DataFrame for plotting
-        chart_data = chart_data.reset_index()
-        # st.dataframe(chart_data)
-                #
-                # name_counts_df.columns = ['Created By', 'count']
-        with col2:
-            # Display the bar chart in Streamlit
-            # st.write("Name Occurrences:")
-            st.bar_chart(chart_data.set_index('Created By'))
+        st.altair_chart(chart, use_container_width=True)
 
     with tab2:
-        col1, col2 = st.columns([2, 4])  # The first column is narrow, the second one spans the width of four columns
+        chart_data2 = df_filtered.groupby(['Created By', 'reporting_categories'])['Standard Price(incl)'].sum().reset_index().round(2)
+        chart_data2.columns = ['Created By', 'reporting_categories', 'Total Internal Cost']
+        chart2 = alt.Chart(chart_data2).mark_bar().encode(
+            x=alt.X('Created By:N', title='Created By'),
+            y=alt.Y('Total Internal Cost:Q', title='Total Internal Cost'),
+            color='reporting_categories:N'
+        ).properties(
+            width=600,
+            height=400
+        )
 
-        with col1:
-            # Reset the index so that it's not included
-            chart_data2_reset = chart_data2.reset_index(drop=True)
-
-            # Display the DataFrame without index in Streamlit
-            st.dataframe(chart_data2_reset)
-
-        with col2:
-            # Use the original DataFrame for plotting without resetting the index again
-            st.bar_chart(chart_data2.set_index('Created By'))
+        st.altair_chart(chart2, use_container_width=True)
 
     st.dataframe(df_filtered)
+else:
+    st.warning("No data available for the selected filters.")
