@@ -4,7 +4,7 @@ import datetime
 import functions
 
 functions.set_page_definitition()
-st.title("Petabytes PoC")
+st.title("📊  Petabytes PoC")
 
 allInvoicelines = "data/Invoice Lines-2024-10-25-17-47-28.csv"
 df = functions.load_cvs_data(allInvoicelines)
@@ -52,7 +52,7 @@ df['reporting_categories'] = df.apply(lambda row: "PTS & Creamations" if row['Pr
 df['reporting_categories'] = df['reporting_categories'].fillna("Misc")
 
 
-st.sidebar.subheader("Select a date filter")
+st.sidebar.subheader("🗓️  Date Range")
 
 date_options = [
     "Custom Range", "Today", "This Week", "This Week-to-date", "This Month", "This Month-to-date",
@@ -62,7 +62,7 @@ date_options = [
     "Last 30 Days", "Last 60 Days", "Last 90 Days", "Last 365 Days",
     # "Next Week", "Next 4 Weeks", "Next Month", "Next Quarter", "Next Year"
     ]
-selected_option = st.sidebar.selectbox("Pick a date range", date_options)
+selected_option = st.sidebar.selectbox("Select a date filter", date_options)
 
 # Get start and end dates based on the selected option
 if selected_option == "Custom Range":
@@ -76,14 +76,14 @@ else:
 start_date = pd.to_datetime(start_date)
 end_date = pd.to_datetime(end_date)
 
+st.sidebar.subheader("📦  Products")
 
-product_cat = st.multiselect("Pick which product categories you want to examine",
-                            list(df["reporting_categories"].unique())[::-1],
-                             None)
+product_cat = st.sidebar.multiselect(
+    "Select Product Category",
+    sorted(df["reporting_categories"].unique()),
+    None
+)
 
-
-# st.dataframe(product_cat)
-# st.dataframe(df["reporting_categories"])
 
 df = df[df["reporting_categories"].isin(product_cat)]
 
@@ -112,45 +112,40 @@ if product_cat:
 
     st.subheader(f"Showing data based on {chart_items} invoices lines from the period between {chart_start_date} and {chart_end_date}")
 
-    # Create 5 columns where the last 4 are merged into one
-    col1, col2 = st.columns([1, 4])  # The first column is narrow, the second one spans the width of four columns
+    # Create tabs
+    tab1, tab2 = st.tabs(["By Count", "By Internal Cost"])
 
-    with col1:
-        # Count the occurrences of each name and creates a list of names and counts
-        st.dataframe(chart_data)
+    with tab1:
+        # Create 5 columns where the last 4 are merged into one
+        col1, col2 = st.columns([1, 4])  # The first column is narrow, the second one spans the width of four columns
+
+        with col1:
+            # Count the occurrences of each name and creates a list of names and counts
+            st.dataframe(chart_data)
 
 
-    # Convert to a DataFrame for plotting
-    chart_data = chart_data.reset_index()
-    # st.dataframe(chart_data)
-            #
-            # name_counts_df.columns = ['Created By', 'count']
-    with col2:
-        # Display the bar chart in Streamlit
-        # st.write("Name Occurrences:")
-        st.bar_chart(chart_data.set_index('Created By'))
+        # Convert to a DataFrame for plotting
+        chart_data = chart_data.reset_index()
+        # st.dataframe(chart_data)
+                #
+                # name_counts_df.columns = ['Created By', 'count']
+        with col2:
+            # Display the bar chart in Streamlit
+            # st.write("Name Occurrences:")
+            st.bar_chart(chart_data.set_index('Created By'))
 
-    col1, col2 = st.columns([2, 4])  # The first column is narrow, the second one spans the width of four columns
+    with tab2:
+        col1, col2 = st.columns([2, 4])  # The first column is narrow, the second one spans the width of four columns
 
-    with col1:
-        # Reset the index so that it's not included
-        chart_data2_reset = chart_data2.reset_index(drop=True)
+        with col1:
+            # Reset the index so that it's not included
+            chart_data2_reset = chart_data2.reset_index(drop=True)
 
-        # Display the DataFrame without index in Streamlit
-        st.dataframe(chart_data2_reset)
+            # Display the DataFrame without index in Streamlit
+            st.dataframe(chart_data2_reset)
 
-    with col2:
-        # Use the original DataFrame for plotting without resetting the index again
-        st.bar_chart(chart_data2.set_index('Created By'))
+        with col2:
+            # Use the original DataFrame for plotting without resetting the index again
+            st.bar_chart(chart_data2.set_index('Created By'))
 
     st.dataframe(df_filtered)
-
-#
-# # List all column names
-# columns = df.columns.tolist()
-# print(columns)
-#
-# # In a Streamlit app, you can display them like this:
-# import streamlit as st
-# st.write("Column names:")
-# st.write(columns)
