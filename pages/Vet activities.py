@@ -37,7 +37,7 @@ else:
     end_date = pd.to_datetime(end_date)
 
     # Filter DataFrame by date
-    df_filtered = df[(df['Invoice Date'] >= start_date) & (df['Invoice Date'] <= end_date)]
+    df_filtered = df[(df['Invoice Line Date: Created'] >= start_date) & (df['Invoice Line Date: Created'] <= end_date)]
 
     # Created By Selector (single selection only)
     st.sidebar.subheader("👥 Created By")
@@ -72,7 +72,7 @@ else:
 
         with tab1:
             # Create Bar Chart for Selected Staff Member (Count)
-            df_filtered['Month'] = df_filtered['Invoice Date'].dt.to_period('M').dt.to_timestamp()
+            df_filtered['Month'] = df_filtered['Invoice Line Date: Created'].dt.to_period('M').dt.to_timestamp()
             if len(product_cat) > 1 or show_category_details:
                 # Stacked bar chart by product names (Count)
                 chart_data = df_filtered.groupby(['Month', 'Product Name']).size().reset_index(name='Count')

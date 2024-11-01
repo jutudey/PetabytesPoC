@@ -1,17 +1,24 @@
 import streamlit as st
 import pandas as pd
 import datetime
+
+from streamlit import dataframe
+
 import functions
 import altair as alt
 
 functions.set_page_definitition()
-st.title("📊  Petabytes PoC")
+st.title("📊  Sold Products (ezyVet)")
 
-allInvoicelines = "data/Invoice Lines-2024-10-25-17-47-28.csv"
-df = functions.load_cvs_data(allInvoicelines)
+
+# import data lines
+invoice_lines_filename_prefix = "Invoice Lines-"
+df = functions.load_newest_file(invoice_lines_filename_prefix)
+
 
 # Convert 'Invoice Date' from string to datetime format
 df['Invoice Date'] = pd.to_datetime(df['Invoice Date'], format='%d-%m-%Y')
+df['Invoice Line Date: Created'] = pd.to_datetime(df['Invoice Line Date: Created'], format='%d-%m-%Y')
 
 # Data Cleaning
 df = df[df['Type'] != 'Header']
@@ -126,7 +133,7 @@ if product_cat:
     df = df[df["reporting_categories"].isin(product_cat)]
 
 # Filter the DataFrame to only include rows between the start and end dates
-df_filtered = df[(df['Invoice Date'] >= start_date) & (df['Invoice Date'] <= end_date)]
+df_filtered = df[(df['Invoice Line Date: Created'] >= start_date) & (df['Invoice Line Date: Created'] <= end_date)]
 
 
 

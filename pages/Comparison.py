@@ -37,7 +37,7 @@ else:
     end_date = pd.to_datetime(end_date)
 
     # Filter DataFrame by date
-    df_filtered = df[(df['Invoice Date'] >= start_date) & (df['Invoice Date'] <= end_date)]
+    df_filtered = df[(df['Invoice Line Date: Created'] >= start_date) & (df['Invoice Line Date: Created'] <= end_date)]
 
     # Staff Member Selector
     st.sidebar.subheader("👥 Staff Members")
@@ -67,7 +67,7 @@ else:
 
     # Create Line Chart
     if not df_filtered.empty:
-        df_filtered['Month'] = df_filtered['Invoice Date'].dt.to_period('M').dt.to_timestamp()
+        df_filtered['Month'] = df_filtered['Invoice Line Date: Created'].dt.to_period('M').dt.to_timestamp()
         line_chart_data = df_filtered.groupby(['Month', 'Created By']).size().reset_index(name='Count')
         line_chart = alt.Chart(line_chart_data).mark_line().encode(
             x=alt.X('Month:T', title='Month', timeUnit='yearmonth'),
