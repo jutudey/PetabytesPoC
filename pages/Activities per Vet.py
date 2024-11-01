@@ -78,6 +78,9 @@ product_cat = st.sidebar.multiselect(
     default=None
 )
 
+# Checkbox to show detailed product information
+show_category_details = st.sidebar.checkbox("Show Category Details")
+
 # Filter by product categories if any are selected
 if product_cat:
     df = df[df["reporting_categories"].isin(product_cat)]
@@ -93,29 +96,56 @@ if not df_filtered.empty:
     tab1, tab2 = st.tabs(["By Count", "By Internal Cost"])
 
     with tab1:
-        chart_data = df_filtered.groupby(['Created By', 'reporting_categories']).size().reset_index(name='Count')
-        chart = alt.Chart(chart_data).mark_bar().encode(
-            x=alt.X('Created By:N', title='Created By'),
-            y=alt.Y('Count:Q', title='Count'),
-            color='reporting_categories:N'
-        ).properties(
-            width=600,
-            height=400
-        )
+        if show_category_details:
+            # Show details by Product Name
+            chart_data = df_filtered.groupby(['Created By', 'reporting_categories', 'Product Name']).size().reset_index(name='Count')
+            chart = alt.Chart(chart_data).mark_bar().encode(
+                x=alt.X('Created By:N', title='Created By'),
+                y=alt.Y('Count:Q', title='Count'),
+                color='Product Name:N'
+            ).properties(
+                width=600,
+                height=400
+            )
+        else:
+            # Show by Category
+            chart_data = df_filtered.groupby(['Created By', 'reporting_categories']).size().reset_index(name='Count')
+            chart = alt.Chart(chart_data).mark_bar().encode(
+                x=alt.X('Created By:N', title='Created By'),
+                y=alt.Y('Count:Q', title='Count'),
+                color='reporting_categories:N'
+            ).properties(
+                width=600,
+                height=400
+            )
 
         st.altair_chart(chart, use_container_width=True)
 
     with tab2:
-        chart_data2 = df_filtered.groupby(['Created By', 'reporting_categories'])['Standard Price(incl)'].sum().reset_index().round(2)
-        chart_data2.columns = ['Created By', 'reporting_categories', 'Total Internal Cost']
-        chart2 = alt.Chart(chart_data2).mark_bar().encode(
-            x=alt.X('Created By:N', title='Created By'),
-            y=alt.Y('Total Internal Cost:Q', title='Total Internal Cost'),
-            color='reporting_categories:N'
-        ).properties(
-            width=600,
-            height=400
-        )
+        if show_category_details:
+            # Show details by Product Name
+            chart_data2 = df_filtered.groupby(['Created By', 'reporting_categories', 'Product Name'])['Standard Price(incl)'].sum().reset_index().round(2)
+            chart_data2.columns = ['Created By', 'reporting_categories', 'Product Name', 'Total Internal Cost']
+            chart2 = alt.Chart(chart_data2).mark_bar().encode(
+                x=alt.X('Created By:N', title='Created By'),
+                y=alt.Y('Total Internal Cost:Q', title='Total Internal Cost'),
+                color='Product Name:N'
+            ).properties(
+                width=600,
+                height=400
+            )
+        else:
+            # Show by Category
+            chart_data2 = df_filtered.groupby(['Created By', 'reporting_categories'])['Standard Price(incl)'].sum().reset_index().round(2)
+            chart_data2.columns = ['Created By', 'reporting_categories', 'Total Internal Cost']
+            chart2 = alt.Chart(chart_data2).mark_bar().encode(
+                x=alt.X('Created By:N', title='Created By'),
+                y=alt.Y('Total Internal Cost:Q', title='Total Internal Cost'),
+                color='reporting_categories:N'
+            ).properties(
+                width=600,
+                height=400
+            )
 
         st.altair_chart(chart2, use_container_width=True)
 
