@@ -66,9 +66,6 @@ def get_date_range(selected_option, custom_start=None, custom_end=None):
     elif selected_option == "Last Week":
       start_date = today - datetime.timedelta(days=today.weekday() + 7)
       end_date = start_date + datetime.timedelta(days=6)
-    elif selected_option == "Last Week-to-date":
-      start_date = today - datetime.timedelta(days=today.weekday() + 7)
-      end_date = today - datetime.timedelta(days=today.weekday() + 1)
     elif selected_option == "Last Month":
       first_day_of_this_month = today.replace(day=1)
       start_date = first_day_of_this_month - datetime.timedelta(days=1)  # Last day of the previous month
@@ -97,16 +94,16 @@ def get_date_range(selected_option, custom_start=None, custom_end=None):
     elif selected_option == "Last Year-to-date":
       start_date = today.replace(year=today.year - 1, month=1, day=1)
       end_date = today.replace(year=today.year - 1, month=today.month, day=today.day)
-    elif selected_option == "Since 30 Days Ago":
+    elif selected_option == "Last 30 Days":
       start_date = today - datetime.timedelta(days=30)
       end_date = today
-    elif selected_option == "Since 60 Days Ago":
+    elif selected_option == "Last 60 Days":
       start_date = today - datetime.timedelta(days=60)
       end_date = today
-    elif selected_option == "Since 90 Days Ago":
+    elif selected_option == "Last 90 Days":
       start_date = today - datetime.timedelta(days=90)
       end_date = today
-    elif selected_option == "Since 365 Days Ago":
+    elif selected_option == "Last 365 Days":
       start_date = today - datetime.timedelta(days=365)
       end_date = today
     elif selected_option == "Next Week":

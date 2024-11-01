@@ -57,11 +57,11 @@ st.sidebar.subheader("Select a date filter")
 date_options = [
     "Custom Range", "Today", "This Week", "This Week-to-date", "This Month", "This Month-to-date",
     "This Quarter", "This Quarter-to-date", "This Year", "This Year-to-date", "This Year-to-last-month",
-    "Yesterday", "Recent", "Last Week", "Last Week-to-date", "Last Month", "Last Month-to-date",
-    "Last Quarter", "Last Quarter-to-date", "Last Year", "Last Year-to-date",
-    "Since 30 Days Ago", "Since 60 Days Ago", "Since 90 Days Ago", "Since 365 Days Ago",
-    "Next Week", "Next 4 Weeks", "Next Month", "Next Quarter", "Next Year"
-]
+    "Yesterday", "Last Week", "Last Month",
+    "Last Quarter", "Last Year",
+    "Last 30 Days", "Last 60 Days", "Last 90 Days", "Last 365 Days",
+    # "Next Week", "Next 4 Weeks", "Next Month", "Next Quarter", "Next Year"
+    ]
 selected_option = st.sidebar.selectbox("Pick a date range", date_options)
 
 # Get start and end dates based on the selected option
