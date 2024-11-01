@@ -49,16 +49,26 @@ df['reporting_categories'] = df['reporting_categories'].fillna("Misc")
 
 # Categorise 'Created By'
 vets = [
-    "Amy Gaines", "Kate Dakin", "Ashton-Rae Nash", "Sarah Halligan", "Hannah Brightmore", "Kaitlin Austin", "James French", "Joshua Findlay", "Andrew Hunt", "Georgia Cleaton", "Alan Robinson", "Sheldon Middleton", "Horatio Marchis", "Claire Hodgson"
+    "Amy Gaines", "Kate Dakin", "Ashton-Rae Nash", "Sarah Halligan",
+    "Hannah Brightmore", "Kaitlin Austin", "James French", "Joshua Findlay", "Andrew Hunt", "Georgia Cleaton",
+    "Alan Robinson", "Sheldon Middleton", "Horatio Marchis", "Claire Hodgson", "Sara Jackson"
 ]
 cops = [
-    "System", "Jennifer Hammersley", "Hannah Pointon", "Sheila Rimes", "Victoria Johnson", "Linda Spooner", "Amy Bache", "Katie Goodwin", "Catriona Bagnall", "Francesca James", "Katie Jones", "Emily Freeman", "Esmee Holt", "Charlotte Middleton"
+    "System", "Jennifer Hammersley", "Hannah Pointon", "Sheila Rimes",
+    "Victoria Johnson", "Linda Spooner", "Amy Bache", "Katie Goodwin", "Catriona Bagnall", "Francesca James",
+    "Katie Jones", "Emily Freeman", "Esmee Holt", "Charlotte Middleton", "Maz Darley"
 ]
 nurses = [
-    "Zoe Van-Leth", "Amy Wood", "Charlotte Crimes", "Emma Foreman", "Charlie Hewitt", "Hannah Brown", "Emily Castle", "Holly Davies", "Liz Hanson", "Emily Smith", "Saffron Marshall", "Charlie Lea-Atkin", "Amber Smith", "Katie Jenkinson", "Maz Darley", "Sara Jackson", "Nicky Oakden"
+    "Zoe Van-Leth", "Amy Wood", "Charlotte Crimes", "Emma Foreman",
+    "Charlie Hewitt", "Hannah Brown", "Emily Castle", "Holly Davies", "Liz Hanson",
+    "Emily Smith", "Saffron Marshall", "Charlie Lea-Atkin", "Amber Smith", "Katie Jenkinson",
+     "Nicky Oakden"
 ]
 
 df['created_by_category'] = df['Created By'].apply(lambda x: 'Vets' if x in vets else ('COPS' if x in cops else ('Nurses' if x in nurses else 'Other')))
+
+# Push the filtered DataFrame to session state
+st.session_state['df'] = df
 
 st.sidebar.subheader("📃  Date Range")
 
@@ -69,7 +79,7 @@ date_options = [
     "Last Quarter", "Last Year",
     "Last 30 Days", "Last 60 Days", "Last 90 Days", "Last 365 Days"
 ]
-selected_option = st.sidebar.selectbox("Select a date filter", date_options)
+selected_option = st.sidebar.selectbox("Select a date filter", date_options, index=date_options.index("This Year"))
 
 # Get start and end dates based on the selected option
 if selected_option == "Custom Range":
@@ -96,8 +106,8 @@ show_category_details = st.sidebar.checkbox("Show Category Details")
 
 # Tickboxes to include specific categories
 include_vets = st.sidebar.checkbox("Include Vets", value=True)
-include_nurses = st.sidebar.checkbox("Include Nurses", value=True)
-include_cops = st.sidebar.checkbox("Include COPS", value=True)
+include_nurses = st.sidebar.checkbox("Include Nurses", value=False)
+include_cops = st.sidebar.checkbox("Include COPS", value=False)
 
 # Filter by selected Created By categories
 categories_to_include = []
@@ -117,6 +127,8 @@ if product_cat:
 
 # Filter the DataFrame to only include rows between the start and end dates
 df_filtered = df[(df['Invoice Date'] >= start_date) & (df['Invoice Date'] <= end_date)]
+
+
 
 # Display the filtered DataFrame
 if not df_filtered.empty:
