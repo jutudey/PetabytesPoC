@@ -59,7 +59,26 @@ else:
         df_filtered = df_filtered[df_filtered["reporting_categories"].isin(product_cat)]
 
     # Checkbox to show detailed product information
-    show_category_details = st.sidebar.checkbox("Show Category Details")
+    show_category_details = st.sidebar.checkbox("Show Category Details", key='show_category_details_1')
+
+    # If Show Category Details is checked, add a multiselect for Product Group
+    if show_category_details and product_cat:
+        available_product_groups = sorted(df_filtered[df_filtered['reporting_categories'].isin(product_cat)]['Product Group'].unique())
+        if available_product_groups:
+            selected_product_groups = st.sidebar.multiselect(
+                "Select Product Groups", available_product_groups, default=available_product_groups, key='product_group_multiselect'
+            )
+            if selected_product_groups:
+                df_filtered = df_filtered[df_filtered['Product Group'].isin(selected_product_groups)]
+
+            # Add a multiselect for Product Name based on selected Product Groups
+            available_product_names = sorted(df_filtered[df_filtered['Product Group'].isin(selected_product_groups)]['Product Name'].unique())
+            if available_product_names:
+                selected_product_names = st.sidebar.multiselect(
+                    "Select Product Names", available_product_names, default=available_product_names, key='product_name_multiselect'
+                )
+                if selected_product_names:
+                    df_filtered = df_filtered[df_filtered['Product Name'].isin(selected_product_names)]
 
     st.title(f"🩺 {selected_created_by} - ezyVet activities")
     st.subheader(
