@@ -21,22 +21,35 @@ df = df[df['Client Contact Code'] != 'ezyVet']
 # st.write(len(df))
 
 
-medication_groups = ["Medication - Oral", "Medication - Injectable", "Medication - Flea & Worm", "Medication - Topical", "Anaesthesia"]
+medication_groups = ["Medication - Oral", "Medication - Injectable", "Medication - Flea & Worm", "Medication - Topical", "Anaesthesia", "Medication - Miscategorised ", "Medication - Other"]
 vaccination_groups = ["Vaccinations", "Vaccine Stock"]
 consultations = ["Consultations"]
-procedures_groups = ["Procedures", "Dental", "Surgery"]
+procedures_groups = ["Procedures", "Dental", "Surgery", "Fluids  Therapy"]
 diagnostics_groups = ["Diagnostic Procedures", "Diagnostic Imaging"]
+lab_work_groups = ["Idexx External", "Idexx In-House"]
+hospitalisation = ["Boarding", "Hospitalisation"]
+consumables = ["Consumables", "Surgery Consumables", "Suture Material", "Bandages"]
+service_fee = ["Service Fee"]
+pts = ['Euthanasia & Cremation', 'Individual Cremations']
 
+# Data Cleaning
+# Change miscategorised Meloxicam and Methadone away from Consultations
+df['Product Group'] = df.apply(lambda row: "Medication - Miscategorised " if row['Product Name'] == "(1) Includes: Meloxicam and Methadone" else row['Product Group'], axis=1)
 
 # Set 'Medication' for medication groups
 df['reporting_categories'] = df['Product Group'].apply(lambda x: "Medication" if x in medication_groups else None)
 
-# Set 'other categores' , without overwriting existing non-null values
+# Set 'other categories' , without overwriting existing non-null values
 df['reporting_categories'] = df.apply(lambda row: "Vaccinations" if row['Product Group'] in vaccination_groups else row['reporting_categories'], axis=1)
 df['reporting_categories'] = df.apply(lambda row: "Consultations" if row['Product Group'] in consultations else row['reporting_categories'], axis=1)
 df['reporting_categories'] = df.apply(lambda row: "Diagnostic" if row['Product Group'] in diagnostics_groups else row['reporting_categories'], axis=1)
 df['reporting_categories'] = df.apply(lambda row: "Procedures" if row['Product Group'] in procedures_groups else row['reporting_categories'], axis=1)
-
+df['reporting_categories'] = df.apply(lambda row: "Lab Work" if row['Product Group'] in lab_work_groups else row['reporting_categories'], axis=1)
+df['reporting_categories'] = df.apply(lambda row: "Hospitalisation" if row['Product Group'] in hospitalisation else row['reporting_categories'], axis=1)
+df['reporting_categories'] = df.apply(lambda row: "Consumables" if row['Product Group'] in consumables else row['reporting_categories'], axis=1)
+df['reporting_categories'] = df.apply(lambda row: "Service Fee" if row['Product Group'] in service_fee else row['reporting_categories'], axis=1)
+df['reporting_categories'] = df.apply(lambda row: "PTS & Creamations" if row['Product Group'] in pts else row['reporting_categories'], axis=1)
+df['reporting_categories'] = df['reporting_categories'].fillna("Misc")
 
 
 st.sidebar.subheader("Select a date filter")
