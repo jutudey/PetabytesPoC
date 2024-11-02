@@ -1,4 +1,5 @@
 import datetime
+import locale
 import pandas as pd
 import streamlit as st
 from PIL import Image
@@ -96,7 +97,7 @@ def set_page_definitition():
   st.set_page_config(layout="wide", page_title=app_name, page_icon=icon, initial_sidebar_state="expanded")
   # st.set_page_config(layout="wide", page_title=app_name, page_icon=":material/sound_detection_dog_barking:", initial_sidebar_state="expanded")
 
-  import locale
+
 
   # Set locale to use appropriate number format
   locale.setlocale(locale.LC_ALL, 'en_GB.UTF-8')  # Use 'en_GB' for UK locale
