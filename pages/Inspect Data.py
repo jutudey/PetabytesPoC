@@ -14,10 +14,6 @@ df = st.session_state.get('df')
 if df is None:
     df = functions.prepare_invoice_lines()
 
-#
-#
-# appointments_path = "data/appointments.csv"
-# procedures_path = "data/Procedures.csv"
 
 st.title("Inspect the Invoice Lines data")
 
