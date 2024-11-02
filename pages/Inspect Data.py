@@ -14,7 +14,7 @@ if df is None:
     df = functions.prepare_invoice_lines()
     st.session_state['df'] = df  # Save it to session state
 
-st.title("Inspect the Invoice Lines Data")
+st.title("🛢️️  Inspect the Invoice Lines Data")
 
 filter_col, summary_col = st.columns([2, 1])
 
@@ -41,7 +41,7 @@ st.sidebar.subheader(f"Applied Discounts: {applied_discount}")
 
 # Display the filtered DataFrame
 st.dataframe(filtered_df[[
-    'Invoice Line Time: Created', 'Invoice Line ID',
+    'Invoice Line Date: Created', 'Invoice Line ID',
     'Invoice Date', 'Product Name', 'Product Description', 'Product Group', 'reporting_categories',
     'Created By', 'created_by_category', 'Client Contact Code',
     'Business Name', 'First Name', 'Last Name',

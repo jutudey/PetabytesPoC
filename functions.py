@@ -240,7 +240,8 @@ def load_newest_file(filename_prefix):
 
 def prepare_invoice_lines():
     # import data lines
-    invoice_lines_filename_prefix = "Invoice Lines-"
+    invoice_lines_filename_prefix = "Invoice Lines Report-"
+
     df = load_newest_file(invoice_lines_filename_prefix)
 
     # Convert 'Invoice Date' from string to datetime format

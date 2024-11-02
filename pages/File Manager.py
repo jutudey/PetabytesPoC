@@ -6,6 +6,8 @@ import functions
 
 app_name = functions.set_page_definitition()
 
+st.title("💾   File Manager")
+
 # Directory to store uploaded files
 data_folder = 'data'
 if not os.path.exists(data_folder):
@@ -16,7 +18,7 @@ left_column, right_column = st.columns([1, 2])
 
 # File Upload in the left column
 with left_column:
-    st.header("Upload New File")
+    st.subheader("Upload New File")
     uploaded_file = st.file_uploader("Choose a CSV or Excel file", type=["csv", "xlsx"])
     if uploaded_file is not None:
         file_name, file_extension = os.path.splitext(uploaded_file.name)
@@ -30,7 +32,7 @@ with left_column:
 
 # List of Files in the right column
 with right_column:
-    st.header("Files in Data Folder")
+    st.subheader("Files in Data Folder")
     files = [f for f in os.listdir(data_folder) if f not in ['.DS_Store', '.ipynb_checkpoints'] and not f.endswith('.ipynb')]
     if files:
         file_data = []
@@ -49,7 +51,7 @@ with right_column:
 
 # File Delete Functionality
 with left_column:
-    st.header("Delete Files")
+    st.subheader("Delete Files")
     if files:
         delete_file = st.selectbox("Select a file to delete", sorted(files))
         if st.button("Delete File"):

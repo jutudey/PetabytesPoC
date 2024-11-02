@@ -5,7 +5,7 @@ import functions
 import altair as alt
 
 functions.set_page_definitition()
-st.title("📊  Sold Products (ezyVet)")
+st.title("📦  Sold Products (ezyVet)")
 
 
 # Load the DataFrame from session state
