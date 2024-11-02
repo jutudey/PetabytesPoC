@@ -1,9 +1,6 @@
 import streamlit as st
 import pandas as pd
 import datetime
-
-from streamlit import dataframe
-
 import functions
 import altair as alt
 
@@ -11,71 +8,13 @@ functions.set_page_definitition()
 st.title("📊  Sold Products (ezyVet)")
 
 
-# import data lines
-invoice_lines_filename_prefix = "Invoice Lines-"
-df = functions.load_newest_file(invoice_lines_filename_prefix)
+# Load the DataFrame from session state
+df = st.session_state.get('df')
 
+# if df is not in sessions state, generate it
+if df is None:
+    df = functions.prepare_invoice_lines()
 
-# Convert 'Invoice Date' from string to datetime format
-df['Invoice Date'] = pd.to_datetime(df['Invoice Date'], format='%d-%m-%Y')
-df['Invoice Line Date: Created'] = pd.to_datetime(df['Invoice Line Date: Created'], format='%d-%m-%Y')
-
-# Data Cleaning
-df = df[df['Type'] != 'Header']
-df = df[df['Product Name'] != 'Subscription Fee']
-df = df[df['Product Name'] != 'Cancellation Fee']
-df = df[df['Client Contact Code'] != 'ezyVet']
-
-# Change miscategorised Meloxicam and Methadone away from Consultations
-df['Product Group'] = df.apply(lambda row: "Medication - Miscategorised " if row['Product Name'] == "(1) Includes: Meloxicam and Methadone" else row['Product Group'], axis=1)
-
-# Set 'Medication' for medication groups
-medication_groups = ["Medication - Oral", "Medication - Injectable", "Medication - Flea & Worm", "Medication - Topical", "Anaesthesia", "Medication - Miscategorised", "Medication - Other"]
-df['reporting_categories'] = df['Product Group'].apply(lambda x: "Medication" if x in medication_groups else None)
-
-# Set 'other categories' , without overwriting existing non-null values
-vaccination_groups = ["Vaccinations", "Vaccine Stock"]
-df['reporting_categories'] = df.apply(lambda row: "Vaccinations" if row['Product Group'] in vaccination_groups else row['reporting_categories'], axis=1)
-consultations = ["Consultations"]
-df['reporting_categories'] = df.apply(lambda row: "Consultations" if row['Product Group'] in consultations else row['reporting_categories'], axis=1)
-procedures_groups = ["Procedures", "Dental", "Surgery", "Fluids  Therapy"]
-df['reporting_categories'] = df.apply(lambda row: "Procedures" if row['Product Group'] in procedures_groups else row['reporting_categories'], axis=1)
-diagnostics_groups = ["Diagnostic Procedures", "Diagnostic Imaging"]
-df['reporting_categories'] = df.apply(lambda row: "Diagnostic" if row['Product Group'] in diagnostics_groups else row['reporting_categories'], axis=1)
-lab_work_groups = ["Idexx External", "Idexx In-House"]
-df['reporting_categories'] = df.apply(lambda row: "Lab Work" if row['Product Group'] in lab_work_groups else row['reporting_categories'], axis=1)
-hospitalisation = ["Boarding", "Hospitalisation"]
-df['reporting_categories'] = df.apply(lambda row: "Hospitalisation" if row['Product Group'] in hospitalisation else row['reporting_categories'], axis=1)
-consumables = ["Consumables", "Surgery Consumables", "Suture Material", "Bandages"]
-df['reporting_categories'] = df.apply(lambda row: "Consumables" if row['Product Group'] in consumables else row['reporting_categories'], axis=1)
-service_fee = ["Service Fee"]
-df['reporting_categories'] = df.apply(lambda row: "Service Fee" if row['Product Group'] in service_fee else row['reporting_categories'], axis=1)
-pts = ["Euthanasia & Cremation", "Individual Cremations"]
-df['reporting_categories'] = df.apply(lambda row: "PTS & Cremations" if row['Product Group'] in pts else row['reporting_categories'], axis=1)
-df['reporting_categories'] = df['reporting_categories'].fillna("Misc")
-
-# Categorise 'Created By'
-vets = [
-    "Amy Gaines", "Kate Dakin", "Ashton-Rae Nash", "Sarah Halligan",
-    "Hannah Brightmore", "Kaitlin Austin", "James French", "Joshua Findlay", "Andrew Hunt", "Georgia Cleaton",
-    "Alan Robinson", "Sheldon Middleton", "Horatio Marchis", "Claire Hodgson", "Sara Jackson"
-]
-cops = [
-    "System", "Jennifer Hammersley", "Hannah Pointon", "Sheila Rimes",
-    "Victoria Johnson", "Linda Spooner", "Amy Bache", "Katie Goodwin", "Catriona Bagnall", "Francesca James",
-    "Katie Jones", "Emily Freeman", "Esmee Holt", "Charlotte Middleton", "Maz Darley"
-]
-nurses = [
-    "Zoe Van-Leth", "Amy Wood", "Charlotte Crimes", "Emma Foreman",
-    "Charlie Hewitt", "Hannah Brown", "Emily Castle", "Holly Davies", "Liz Hanson",
-    "Emily Smith", "Saffron Marshall", "Charlie Lea-Atkin", "Amber Smith", "Katie Jenkinson",
-     "Nicky Oakden"
-]
-
-df['created_by_category'] = df['Created By'].apply(lambda x: 'Vets' if x in vets else ('COPS' if x in cops else ('Nurses' if x in nurses else 'Other')))
-
-# Push the filtered DataFrame to session state
-st.session_state['df'] = df
 
 st.sidebar.subheader("📃  Date Range")
 
@@ -142,7 +81,7 @@ if not df_filtered.empty:
     st.subheader(f"Showing data based on {len(df_filtered)} invoice lines from the period between {start_date.strftime('%B %d, %Y')} and {end_date.strftime('%B %d, %Y')}")
 
     # Create tabs for different aggregations
-    tab1, tab2 = st.tabs(["By Count", "By Internal Cost"])
+    tab1, tab2 = st.tabs(["By Number of Invoice Lines", "By Internal Cost"])
 
     with tab1:
         if show_category_details:

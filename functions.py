@@ -4,7 +4,87 @@ import streamlit as st
 from PIL import Image
 import re
 import os
+from pandas.api.types import (
+    is_categorical_dtype,
+    is_datetime64_any_dtype,
+    is_numeric_dtype,
+    is_object_dtype,)
 
+
+def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Adds a UI on top of a dataframe to let viewers filter columns
+
+    Args:
+        df (pd.DataFrame): Original dataframe
+
+    Returns:
+        pd.DataFrame: Filtered dataframe
+    """
+    modify = st.checkbox("Add filters")
+
+    if not modify:
+        return df
+
+    df = df.copy()
+
+    # Try to convert datetimes into a standard format (datetime, no timezone)
+    for col in df.columns:
+        if is_object_dtype(df[col]):
+            try:
+                df[col] = pd.to_datetime(df[col])
+            except Exception:
+                pass
+
+        if is_datetime64_any_dtype(df[col]):
+            df[col] = df[col].dt.tz_localize(None)
+
+    modification_container = st.container()
+
+    with modification_container:
+        to_filter_columns = st.multiselect("Filter dataframe on", df.columns)
+        for column in to_filter_columns:
+            left, right = st.columns((1, 20))
+            # Treat columns with < 10 unique values as categorical
+            if is_categorical_dtype(df[column]) or df[column].nunique() < 100:
+                user_cat_input = right.multiselect(
+                    f"Values for {column}",
+                    df[column].unique(),
+                    default=list(df[column].unique()),
+                )
+                df = df[df[column].isin(user_cat_input)]
+            elif is_numeric_dtype(df[column]):
+                _min = float(df[column].min())
+                _max = float(df[column].max())
+                step = (_max - _min) / 100
+                user_num_input = right.slider(
+                    f"Values for {column}",
+                    min_value=_min,
+                    max_value=_max,
+                    value=(_min, _max),
+                    step=step,
+                )
+                df = df[df[column].between(*user_num_input)]
+            elif is_datetime64_any_dtype(df[column]):
+                user_date_input = right.date_input(
+                    f"Values for {column}",
+                    value=(
+                        df[column].min(),
+                        df[column].max(),
+                    ),
+                )
+                if len(user_date_input) == 2:
+                    user_date_input = tuple(map(pd.to_datetime, user_date_input))
+                    start_date, end_date = user_date_input
+                    df = df.loc[df[column].between(start_date, end_date)]
+            else:
+                user_text_input = right.text_input(
+                    f"Substring or regex in {column}",
+                )
+                if user_text_input:
+                    df = df[df[column].astype(str).str.contains(user_text_input)]
+
+    return df
 
 def set_page_definitition():
   app_name = "Petabytes PoC v0.1"
@@ -16,8 +96,12 @@ def set_page_definitition():
   st.set_page_config(layout="wide", page_title=app_name, page_icon=icon, initial_sidebar_state="expanded")
   # st.set_page_config(layout="wide", page_title=app_name, page_icon=":material/sound_detection_dog_barking:", initial_sidebar_state="expanded")
 
-  return app_name
+  import locale
 
+  # Set locale to use appropriate number format
+  locale.setlocale(locale.LC_ALL, 'en_GB.UTF-8')  # Use 'en_GB' for UK locale
+
+  return app_name
 
 def get_date_range(selected_option, custom_start=None, custom_end=None):
     today = datetime.date.today()
@@ -158,6 +242,88 @@ def load_newest_file(filename_prefix):
     except Exception as e:
         print(f"An error occurred: {e}")
 
+def prepare_invoice_lines():
+    # import data lines
+    invoice_lines_filename_prefix = "Invoice Lines-"
+    df = load_newest_file(invoice_lines_filename_prefix)
+
+    # Convert 'Invoice Date' from string to datetime format
+    df['Invoice Date'] = pd.to_datetime(df['Invoice Date'], format='%d-%m-%Y')
+    df['Invoice Line Date: Created'] = pd.to_datetime(df['Invoice Line Date: Created'], format='%d-%m-%Y')
+
+    # Data Cleaning
+    df = df[df['Type'] != 'Header']
+    df = df[df['Product Name'] != 'Subscription Fee']
+    df = df[df['Product Name'] != 'Cancellation Fee']
+    df = df[df['Client Contact Code'] != 'ezyVet']
+
+    # Change miscategorised Meloxicam and Methadone away from Consultations
+    df['Product Group'] = df.apply(lambda row: "Medication - Miscategorised " if row[
+                                                                                     'Product Name'] == "(1) Includes: Meloxicam and Methadone" else
+    row['Product Group'], axis=1)
+
+    # Set 'Medication' for medication groups
+    medication_groups = ["Medication - Oral", "Medication - Injectable", "Medication - Flea & Worm",
+                         "Medication - Topical", "Anaesthesia", "Medication - Miscategorised", "Medication - Other"]
+    df['reporting_categories'] = df['Product Group'].apply(lambda x: "Medication" if x in medication_groups else None)
+
+    # Set 'other categories' , without overwriting existing non-null values
+    vaccination_groups = ["Vaccinations", "Vaccine Stock"]
+    df['reporting_categories'] = df.apply(
+        lambda row: "Vaccinations" if row['Product Group'] in vaccination_groups else row['reporting_categories'],
+        axis=1)
+    consultations = ["Consultations"]
+    df['reporting_categories'] = df.apply(
+        lambda row: "Consultations" if row['Product Group'] in consultations else row['reporting_categories'], axis=1)
+    procedures_groups = ["Procedures", "Dental", "Surgery", "Fluids  Therapy"]
+    df['reporting_categories'] = df.apply(
+        lambda row: "Procedures" if row['Product Group'] in procedures_groups else row['reporting_categories'], axis=1)
+    diagnostics_groups = ["Diagnostic Procedures", "Diagnostic Imaging"]
+    df['reporting_categories'] = df.apply(
+        lambda row: "Diagnostic" if row['Product Group'] in diagnostics_groups else row['reporting_categories'], axis=1)
+    lab_work_groups = ["Idexx External", "Idexx In-House"]
+    df['reporting_categories'] = df.apply(
+        lambda row: "Lab Work" if row['Product Group'] in lab_work_groups else row['reporting_categories'], axis=1)
+    hospitalisation = ["Boarding", "Hospitalisation"]
+    df['reporting_categories'] = df.apply(
+        lambda row: "Hospitalisation" if row['Product Group'] in hospitalisation else row['reporting_categories'],
+        axis=1)
+    consumables = ["Consumables", "Surgery Consumables", "Suture Material", "Bandages"]
+    df['reporting_categories'] = df.apply(
+        lambda row: "Consumables" if row['Product Group'] in consumables else row['reporting_categories'], axis=1)
+    service_fee = ["Service Fee"]
+    df['reporting_categories'] = df.apply(
+        lambda row: "Service Fee" if row['Product Group'] in service_fee else row['reporting_categories'], axis=1)
+    pts = ["Euthanasia & Cremation", "Individual Cremations"]
+    df['reporting_categories'] = df.apply(
+        lambda row: "PTS & Cremations" if row['Product Group'] in pts else row['reporting_categories'], axis=1)
+    df['reporting_categories'] = df['reporting_categories'].fillna("Misc")
+
+    # Categorise 'Created By'
+    vets = [
+        "Amy Gaines", "Kate Dakin", "Ashton-Rae Nash", "Sarah Halligan",
+        "Hannah Brightmore", "Kaitlin Austin", "James French", "Joshua Findlay", "Andrew Hunt", "Georgia Cleaton",
+        "Alan Robinson", "Sheldon Middleton", "Horatio Marchis", "Claire Hodgson", "Sara Jackson"
+    ]
+    cops = [
+        "System", "Jennifer Hammersley", "Hannah Pointon", "Sheila Rimes",
+        "Victoria Johnson", "Linda Spooner", "Amy Bache", "Katie Goodwin", "Catriona Bagnall", "Francesca James",
+        "Katie Jones", "Emily Freeman", "Esmee Holt", "Charlotte Middleton", "Maz Darley"
+    ]
+    nurses = [
+        "Zoe Van-Leth", "Amy Wood", "Charlotte Crimes", "Emma Foreman",
+        "Charlie Hewitt", "Hannah Brown", "Emily Castle", "Holly Davies", "Liz Hanson",
+        "Emily Smith", "Saffron Marshall", "Charlie Lea-Atkin", "Amber Smith", "Katie Jenkinson",
+        "Nicky Oakden"
+    ]
+
+    df['created_by_category'] = df['Created By'].apply(
+        lambda x: 'Vets' if x in vets else ('COPS' if x in cops else ('Nurses' if x in nurses else 'Other')))
+
+    # Push the filtered DataFrame to session state
+    st.session_state['df'] = df
+
+    return df
 
 @st.cache_data
 
