@@ -37,6 +37,11 @@ def initialize_session_state():
         print("Running Invoice Lines function...")
         st.session_state.all_invoice_lines = prepare_invoice_lines()
 
+    # Collect Payments
+    if 'all_payments' not in st.session_state:
+        print("Running Invoice Lines function...")
+        st.session_state.all_payments = extract_tl_Payments()
+
 def normalize_id(id_value):
     if id_value == "nan":
         return np.nan
@@ -458,6 +463,8 @@ def load_ezyvet_customers(customer_id=None):
 def add_petcareplan_to_invoice_lines(invoice_lines_df):
     petcare_plans = load_petcare_plans()
 
+    print("Adding petcare plan id to invoice lines... ")
+
     # Assuming invoice_lines and petcare_plans are your dataframes
     # Create a lookup function to get the product code from petcare_plans
     def lookup_petcare_plan(animal_code):
@@ -474,6 +481,8 @@ def add_petcareplan_to_invoice_lines(invoice_lines_df):
 def add_petcareplan_to_payments(payments_df):
     petcare_plans = load_petcare_plans()
 
+    print("Adding petcare plan id to payments... ")
+
     # Create a lookup function to get the product code from petcare_plans
     def lookup_petcare_plan(tl_PetID):
         matching_row = petcare_plans[petcare_plans['EvPetId'] == tl_PetID]
@@ -489,6 +498,8 @@ def add_petcareplan_to_payments(payments_df):
 def extract_tl_Payments():
     filename_prefix = "payment-history-"
 
+    print("Processing payment lines... ")
+
     # load data into df
     df = load_newest_file(filename_prefix)
 
@@ -498,7 +509,7 @@ def extract_tl_Payments():
     df["cardDetails_lastFour"] = df["cardDetails_lastFour"].astype(str)
     df['amount'] = df['amount'].astype(float).round(2) / 100
     df["eventDate"] = pd.to_datetime(df["eventDate"], utc=True)
-    df["eventDate"] = df["eventDate"].dt.strftime('%Y-%m-%d')
+    df['eventDate'] = df['eventDate'].dt.date
 
     # st.header('pre-split DF')
     # st.dataframe(df)
@@ -613,18 +624,18 @@ def extract_tl_Payments():
 
     payments['tl_CustomerName'] = payments['Owner First Name'] +" " + payments['Owner Last Name']
     payments['tl_PetName'] = payments['Animal Name']
-
+    print("Convertig tl_Date to date format!")
+    payments['tl_Date'] = pd.to_datetime(payments['tl_Date'])
 
     # Drop all columns after 'tl_Comment'
     payments = payments.loc[:, :'tl_Comment']
 
     # st.header('output DF')
     # st.dataframe(payments)
-    print("hello")
     # return the aggregated DataFrame
 
     payments = add_petcareplan_to_payments(payments)
-
+    print(payments.info())
     return payments
 
 def get_ezyvet_pet_details(pet_id=None):

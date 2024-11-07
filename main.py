@@ -5,6 +5,10 @@ import functions
 
 functions.set_page_definitition()
 st.title("Petabytes PoC")
+
+functions.initialize_session_state()
+
+
 #
 # allInvoicelines = "data/Invoice Lines-2024-10-25-17-47-28.csv"
 # df = functions.load_cvs_data(allInvoicelines)
