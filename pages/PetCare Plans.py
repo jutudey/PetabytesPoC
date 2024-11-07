@@ -89,63 +89,68 @@ df_filtered = df[(df['Invoice Line Date: Created'] >= start_date) & (df['Invoice
 if not df_filtered.empty:
     st.subheader(f"Showing data based on {len(df_filtered)} invoice lines from the period between {start_date.strftime('%B %d, %Y')} and {end_date.strftime('%B %d, %Y')}")
 
-    # Create tabs for different aggregations
-    tab1, tab2 = st.tabs(["By Number of Invoice Lines", "By Internal Cost"])
+    # # Create tabs for different aggregations
+    # tab1, tab2 = st.tabs(["By Number of Invoice Lines", "By Internal Cost"])
 
-    with tab1:
-        if show_category_details:
-            # Show details by Product Name
-            chart_data = df_filtered.groupby(['petcare_plan_in_vera', 'reporting_categories', 'Product Name']).size().reset_index(name='Count')
-            chart = alt.Chart(chart_data).mark_bar().encode(
-                x=alt.X('petcare_plan_in_vera:N', title='Created By'),
-                y=alt.Y('Count:Q', title='Count'),
-                color='Product Name:N'
-            ).properties(
-                width=600,
-                height=400
-            )
-        else:
-            # Show by Category
-            chart_data = df_filtered.groupby(['petcare_plan_in_vera', 'reporting_categories']).size().reset_index(name='Count')
-            chart = alt.Chart(chart_data).mark_bar().encode(
-                x=alt.X('petcare_plan_in_vera:N', title='Created By'),
-                y=alt.Y('Count:Q', title='Count'),
-                color='reporting_categories:N'
-            ).properties(
-                width=600,
-                height=400
-            )
+    # with tab1:
+    #     if show_category_details:
+    #         # Show details by Product Name
+    #         chart_data = df_filtered.groupby(['petcare_plan_in_vera', 'reporting_categories', 'Product Name']).size().reset_index(name='Count')
+    #         chart = alt.Chart(chart_data).mark_bar().encode(
+    #             x=alt.X('petcare_plan_in_vera:N', title='Created By'),
+    #             y=alt.Y('Count:Q', title='Count'),
+    #             color='Product Name:N'
+    #         ).properties(
+    #             width=600,
+    #             height=400
+    #         )
+    #     else:
+    #         # Show by Category
+    #         chart_data = df_filtered.groupby(['petcare_plan_in_vera', 'reporting_categories']).size().reset_index(name='Count')
+    #         chart = alt.Chart(chart_data).mark_bar().encode(
+    #             x=alt.X('petcare_plan_in_vera:N', title='Created By'),
+    #             y=alt.Y('Count:Q', title='Count'),
+    #             color='reporting_categories:N'
+    #         ).properties(
+    #             width=600,
+    #             height=400
+    #         )
+    #
+    #     st.altair_chart(chart, use_container_width=True)
 
-        st.altair_chart(chart, use_container_width=True)
 
-    with tab2:
-        if show_category_details:
-            # Show details by Product Name
-            chart_data2 = df_filtered.groupby(['petcare_plan_in_vera', 'reporting_categories', 'Product Name'])['Standard Price(incl)'].sum().reset_index().round(2)
-            chart_data2.columns = ['petcare_plan_in_vera', 'reporting_categories', 'Product Name', 'Total Internal Cost']
-            chart2 = alt.Chart(chart_data2).mark_bar().encode(
-                x=alt.X('petcare_plan_in_vera:N', title='£ by PetCare Plans'),
-                y=alt.Y('Total Internal Cost:Q', title='Total Internal Cost'),
-                color='Product Name:N'
-            ).properties(
-                width=600,
-                height=400
-            )
-        else:
-            # Show by Category
-            chart_data2 = df_filtered.groupby(['petcare_plan_in_vera', 'reporting_categories'])['Standard Price(incl)'].sum().reset_index().round(2)
-            chart_data2.columns = ['petcare_plan_in_vera', 'reporting_categories', 'Total Internal Cost']
-            chart2 = alt.Chart(chart_data2).mark_bar().encode(
-                x=alt.X('petcare_plan_in_vera:N', title='Count of Invoice Lines by PetCare Plans'),
-                y=alt.Y('Total Internal Cost:Q', title='Total Internal Cost'),
-                color='reporting_categories:N'
-            ).properties(
-                width=600,
-                height=400
-            )
+    if show_category_details:
+        # Show details by Product Name
+        chart_data2 = df_filtered.groupby(['petcare_plan_in_vera', 'reporting_categories', 'Product Name'])['Standard Price(incl)'].sum().reset_index().round(2)
+        chart_data2.columns = ['petcare_plan_in_vera', 'reporting_categories', 'Product Name', 'Total Internal Cost']
+        chart2 = alt.Chart(chart_data2).mark_bar().encode(
+            x=alt.X('petcare_plan_in_vera:N', title='£ by PetCare Plans'),
+            y=alt.Y('Total Internal Cost:Q', title='Total Internal Cost'),
+            color='Product Name:N'
+        ).properties(
+            width=600,
+            height=500
+        )
+    else:
+        # Show by Category
+        chart_data2 = df_filtered.groupby(['petcare_plan_in_vera', 'reporting_categories'])['Standard Price(incl)'].sum().reset_index().round(2)
+        chart_data2.columns = ['petcare_plan_in_vera', 'reporting_categories', 'Total Internal Cost']
+        chart2 = alt.Chart(chart_data2).mark_bar().encode(
+            x=alt.X('petcare_plan_in_vera:N', title='Count of Invoice Lines by PetCare Plans'),
+            y=alt.Y('Total Internal Cost:Q', title='Total Internal Cost'),
+            color='reporting_categories:N'
+        ).properties(
+            width=600,
+            height=500
+        )
 
-        st.altair_chart(chart2, use_container_width=True)
+    st.altair_chart(chart2, use_container_width=True)
 
-    st.dataframe(df_filtered)
+    with st.expander("Show Invoice Line Details"):
+        # Content inside the expandable box
+        st.write("Here are the details for the enriched invoice lines:")
+        st.dataframe(df_filtered)
+
+
 else:
     st.warning("No data available for the selected filters.")
