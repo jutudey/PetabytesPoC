@@ -1,4 +1,5 @@
 import datetime
+import numpy as np
 import pandas as pd
 import streamlit as st
 from PIL import Image
@@ -36,6 +37,28 @@ def initialize_session_state():
         print("Running Invoice Lines function...")
         st.session_state.all_invoice_lines = prepare_invoice_lines()
 
+def normalize_id(id_value):
+    if id_value == "nan":
+        return np.nan
+
+    if pd.isna(id_value):
+        return np.nan
+
+    # Convert to string if it's a number
+    id_value = str(id_value)
+
+    # Remove ".0" if it is at the end of the entry
+    if id_value.endswith('.0'):
+        id_value = id_value[:-2]
+
+    # Remove any commas
+    id_value = id_value.replace(',', '')
+
+    # Ensure it's exactly 6 digits
+    if len(id_value) == 6 and id_value.isdigit():
+        return id_value
+    else:
+        raise ValueError(f"Invalid ID format for value: {id_value}")
 
 
 
@@ -62,7 +85,6 @@ def load_newest_file(filename_prefix):
         print(f"The folder '{folder_path}' does not exist.")
     except Exception as e:
         print(f"An error occurred: {e}")
-
 
 def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -138,7 +160,6 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                     df = df[df[column].astype(str).str.contains(user_text_input)]
 
     return df
-
 
 def get_date_range(selected_option, custom_start=None, custom_end=None):
     today = datetime.date.today()
@@ -259,12 +280,15 @@ def get_date_range(selected_option, custom_start=None, custom_end=None):
 
     return start_date, end_date
 
-
 def prepare_invoice_lines():
+    print("Running Invoice Lines script....")
     # import data lines
     invoice_lines_filename_prefix = "Invoice Lines Report-"
 
     df = load_newest_file(invoice_lines_filename_prefix)
+
+    df['Animal Code'] = df['Animal Code'].apply(normalize_id)
+
 
     # Convert 'Invoice Date' from string to datetime format
     df['Invoice Date'] = pd.to_datetime(df['Invoice Date'], format='%d-%m-%Y')
@@ -342,4 +366,111 @@ def prepare_invoice_lines():
     # # Push the filtered DataFrame to session state
     # st.session_state['df'] = df
 
+    df = add_petcareplan_to_invoice_lines(df)
+
     return df
+
+def load_petcare_plans():
+    filename_prefix = "pet-care-plans-"
+
+    # load data into df
+    df = load_newest_file(filename_prefix)
+
+    df['EvPetId'] = df['EvPetId'].astype(str).fillna('')
+    df['EvPetId'] = df['EvPetId'].astype(str).str.replace('\.0$', '', regex=True).fillna('')
+
+    # Apply prefix based on the length of EvPetId
+    def format_evpetid(id_value):
+        if len(id_value) == 3:
+            return f"100{id_value}"
+        elif len(id_value) == 4:
+            return f"10{id_value}"
+        elif len(id_value) == 2:
+            return f"1000{id_value}"
+        else:
+            return id_value
+
+    df['EvPetId'] = df['EvPetId'].apply(format_evpetid)
+    # formatting datatypes
+    # Replace "v1" with "V1" in all cells of ActualEvWp
+    df['ActualEvWp'] = df['ActualEvWp'].str.replace('v1', 'V1', regex=False)
+
+    # Map specific ProductCode values to their new values
+    df['ProductCode'] = df['ProductCode'].replace({
+        "D1": "D1V1", "D2": "D2V2", "D3": "D3V1",
+        "C1": "C1V1", "C2": "C2V2", "C3": "C3V3"
+    })
+
+    # Specifically change "C3V1 Cat-Senior" to "C3V1-Cat-Senior"
+    df['ActualEvWp'] = df['ActualEvWp'].replace("C3V1 Cat-Senior", "C3V1-Cat-Senior")
+
+    # Extract text before the first hyphen in ActualEvWp
+    df['EvWPcode'] = df['ActualEvWp'].str.split('-').str[0]
+
+    # Apply conditional changes to EvWPcode based on Species
+    df['EvWPcode'] = df.apply(lambda x: "PCAV1-DOG" if x['EvWPcode'] == "PCAV1" and x['Species'] == "Dog" else (
+        "PCAV1-CAT" if x['EvWPcode'] == "PCAV1" else x['EvWPcode']), axis=1)
+
+    # Map specific ProductCode values to their new values
+    df['EvWPcode'] = df['EvWPcode'].replace({
+        "D1": "D1V1", "D2": "D2V2", "D3": "D3V1",
+        "C1": "C1V1", "C2": "C2V2", "C3": "C3V3"
+    })
+
+    # Strip spaces and standardize case before comparing
+    import numpy as np
+
+    # Set VeraEvDiff to True when ProductCode and EvWPcode are the same, and False when they differ
+    df['VeraEvDiff'] = np.where(df['EvWPcode'].isna(), False,
+                                df['EvWPcode'].str.strip().str.upper() == df['ProductCode'].str.strip().str.upper())
+
+
+    # Load ezyvet data to extract the customer id which is missing the Vera extract
+    df2 = load_ezyvet_customers()
+
+    df2['Animal Code'] = df2['Animal Code'].astype(str)
+    df2['Owner Contact Code'] = df2['Owner Contact Code'].astype(str)
+
+    # Assuming df2 contains 'Animal Code' and 'Owner Contact Code' columns
+    df = df.merge(df2[['Animal Code', 'Owner Contact Code']], how='left', left_on='EvPetId', right_on='Animal Code')
+
+    # Rename the merged 'Owner Contact Code' to 'EvCustomerID' and drop 'Animal Code' from the merged dataframe
+    df = df.rename(columns={'Owner Contact Code': 'EvCustomerID'}).drop(columns=['Animal Code'])
+
+    # Push the filtered DataFrame to session state
+    st.session_state['ss_petcare_plans'] = df
+
+    return df
+
+
+def load_ezyvet_customers(customer_id=None):
+    filename_prefix = "Animals Report-"
+
+    # load data into df
+    df = load_newest_file(filename_prefix)
+
+    if customer_id == None:
+        return df
+    else:
+        filt = (df['Owner Contact Code'] == customer_id)
+        df = df[filt]
+        return df
+
+
+def add_petcareplan_to_invoice_lines(invoice_lines_df):
+    petcare_plans = load_petcare_plans()
+
+    # Assuming invoice_lines and petcare_plans are your dataframes
+    # Create a lookup function to get the product code from petcare_plans
+    def lookup_petcare_plan(animal_code):
+        matching_row = petcare_plans[petcare_plans['EvPetId'] == animal_code]
+        if not matching_row.empty:
+            return matching_row['ProductCode'].values[0]
+        return "Plan not in VERA"
+
+    # Apply the lookup function to each row in invoice_lines
+    invoice_lines_df['petcare_plan_in_vera'] = invoice_lines_df['Animal Code'].apply(lookup_petcare_plan)
+
+    return invoice_lines_df
+
+
