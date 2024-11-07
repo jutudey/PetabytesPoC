@@ -6,8 +6,10 @@ import functions
 functions.set_page_definitition()
 st.title("Petabytes PoC")
 
-functions.initialize_session_state()
+with st.spinner('Loading and preparing data...'):
+    functions.initialize_session_state()
 
+st.warning("Data loaded successfully!")
 
 #
 # allInvoicelines = "data/Invoice Lines-2024-10-25-17-47-28.csv"

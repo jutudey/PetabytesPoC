@@ -7,7 +7,8 @@ import altair as alt
 functions.set_page_definitition()
 st.title("📦  PetCare Plan Analysis")
 
-functions.initialize_session_state()
+with st.spinner('Loading and preparing data...'):
+    functions.initialize_session_state()
 
 # Load the data from session state
 invoice_lines = st.session_state.all_invoice_lines

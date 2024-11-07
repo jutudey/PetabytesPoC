@@ -7,8 +7,13 @@ import altair as alt
 # Set the app details
 app_name = functions.set_page_definitition()
 
-# Load the DataFrame from session state
-df = st.session_state.get('df')
+with st.spinner('Loading and preparing data...'):
+    functions.initialize_session_state()
+
+# Load the data from session state
+df = st.session_state.all_invoice_lines
+# payments = st.session_state.all_payments
+
 
 # If df is not in session state, generate it
 if df is None:

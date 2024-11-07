@@ -7,13 +7,12 @@ import functions
 # General page setup
 functions.set_page_definitition()
 
+functions.initialize_session_state()
+
 
 # Load the DataFrame from session state
-df = st.session_state.get('df')
+df = st.session_state.all_invoice_lines
 
-# if df is not in sessions state, generate it
-if df is None:
-    df = functions.prepare_invoice_lines()
 
 # Date Range Selector
 st.sidebar.subheader("📃  Date Range")

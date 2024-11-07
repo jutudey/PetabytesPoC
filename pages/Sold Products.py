@@ -7,7 +7,8 @@ import altair as alt
 functions.set_page_definitition()
 st.title("📦  Sold Products (ezyVet)")
 
-functions.initialize_session_state()
+with st.spinner('Loading and preparing data...'):
+    functions.initialize_session_state()
 
 # Load the data from session state
 df = st.session_state.all_invoice_lines

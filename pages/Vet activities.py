@@ -5,10 +5,11 @@ import altair as alt
 import functions
 
 # General page setup
-functions.set_page_definitition()
+with st.spinner('Loading and preparing data...'):
+    functions.initialize_session_state()
 
 # Load the DataFrame from session state
-df = st.session_state.get('df')
+df = st.session_state.all_invoice_lines
 
 # if df is not in sessions state, generate it
 if df is None:
