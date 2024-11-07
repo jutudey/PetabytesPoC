@@ -7,14 +7,10 @@ import altair as alt
 functions.set_page_definitition()
 st.title("📦  Sold Products (ezyVet)")
 
+functions.initialize_session_state()
 
-# Load the DataFrame from session state
-df = st.session_state.get('df')
-
-# if df is not in sessions state, generate it
-if df is None:
-    df = functions.prepare_invoice_lines()
-
+# Load the data from session state
+df = st.session_state.all_invoice_lines
 
 st.sidebar.subheader("📃  Date Range")
 

@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import functions
+import altair as alt
 
 
 # Set the app details
@@ -48,3 +49,5 @@ st.dataframe(filtered_df[[
     'Animal Code', 'Animal Name', 'Species', 'Breed',
     'Product Cost', 'Standard Price(incl)', 'Discount(£)', 'Total Invoiced (incl)',
 ]])
+
+
