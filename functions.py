@@ -36,15 +36,20 @@ def set_page_definitition():
 
 def initialize_session_state():
 
-    # Collect Invoice Lines
-    if 'all_invoice_lines' not in st.session_state:
-        print("Running Invoice Lines function...")
-        st.session_state.all_invoice_lines = prepare_invoice_lines()
+    try:
+        # Collect Invoice Lines
+        if 'all_invoice_lines' not in st.session_state:
+            print("Running Invoice Lines function...")
+            st.session_state.all_invoice_lines = prepare_invoice_lines()
 
-    # Collect Payments
-    if 'all_payments' not in st.session_state:
-        print("Running Invoice Lines function...")
-        st.session_state.all_payments = extract_tl_Payments()
+        # Collect Payments
+        if 'all_payments' not in st.session_state:
+            print("Running Invoice Lines function...")
+            st.session_state.all_payments = extract_tl_Payments()
+    except TypeError:
+        st.warning("Please upload the required files to proceed.")
+        pass
+
 
 def normalize_id(id_value):
     if id_value == "nan":
