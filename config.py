@@ -21,7 +21,7 @@ required_files_description = [['ezyVet Invoice Lines',
                                    'payment-history-', 'payment-history-',
                                    'Go to VERA Toolbox https://app.gardenvets.com/adad4b9d-8ad5-4ef4-9f3f-7916b0850882/reports/report-list and click on "Payment History" in the File column'],
                                   ['VERA Adyen Payment Links',
-                                   'payment-history-',
-                                   'payment-history-',
+                                   'paymentLinks',
+                                   'paymentLinks',
                                    'Go to VERA Toolbox https://app.gardenvets.com/adad4b9d-8ad5-4ef4-9f3f-7916b0850882/reports/report-list and click on "Payment History" in the File column']
                                   ]

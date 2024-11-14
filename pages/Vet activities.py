@@ -89,9 +89,9 @@ st.subheader(
 # Display the filtered DataFrame
 if not df_filtered.empty:
     # Create tabs
-    tab1, tab2 = st.tabs(["By Number of Invoice Lines", "By Internal Cost"])
+    tab1va, tab2va = st.tabs(["By Number of Invoice Lines", "By Internal Cost"])
 
-    with tab1:
+    with tab1va:
         # Create Bar Chart for Selected Staff Member (Count)
         df_filtered['Month'] = df_filtered['Invoice Line Date: Created'].dt.to_period('M').dt.to_timestamp()
         if len(product_cat) > 1 or show_category_details:
@@ -118,7 +118,7 @@ if not df_filtered.empty:
 
         st.altair_chart(chart, use_container_width=True)
 
-    with tab2:
+    with tab2va:
         # Create Bar Chart for Selected Staff Member (Sum of Standard Price(incl))
         if len(product_cat) > 1 or show_category_details:
             # Stacked bar chart by product names (Standard Price incl)

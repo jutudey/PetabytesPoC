@@ -78,9 +78,9 @@ if not df_filtered.empty:
     st.subheader(f"Showing data based on {len(df_filtered)} invoice lines from the period between {start_date.strftime('%B %d, %Y')} and {end_date.strftime('%B %d, %Y')}")
 
     # Create tabs for different aggregations
-    tab1, tab2 = st.tabs(["By Number of Invoice Lines", "By Internal Cost"])
+    tab1sp, tab2sp = st.tabs(["By Number of Invoice Lines", "By Internal Cost"])
 
-    with tab1:
+    with tab1sp:
         if show_category_details:
             # Show details by Product Name
             chart_data = df_filtered.groupby(['Created By', 'reporting_categories', 'Product Name']).size().reset_index(name='Count')
@@ -106,7 +106,7 @@ if not df_filtered.empty:
 
         st.altair_chart(chart, use_container_width=True)
 
-    with tab2:
+    with tab2sp:
         if show_category_details:
             # Show details by Product Name
             chart_data2 = df_filtered.groupby(['Created By', 'reporting_categories', 'Product Name'])['Standard Price(incl)'].sum().reset_index().round(2)
