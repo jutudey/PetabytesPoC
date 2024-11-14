@@ -2,61 +2,88 @@ import streamlit as st
 import os
 import pandas as pd
 from datetime import datetime
+import config
 import functions
 
-app_name = functions.set_page_definitition()
+
+# Set page name or title
+functions.set_page_definitition()
 
 st.title("💾   File Manager")
+
 
 # Directory to store uploaded files
 data_folder = 'data'
 if not os.path.exists(data_folder):
     os.makedirs(data_folder)
 
-# Two-column layout
-left_column, right_column = st.columns([1, 2])
-
-# File Upload in the left column
-with left_column:
-    st.subheader("Upload New File")
-    uploaded_file = st.file_uploader("Choose a CSV or Excel file", type=["csv", "xlsx"])
-    if uploaded_file is not None:
-        file_name, file_extension = os.path.splitext(uploaded_file.name)
-        file_path = os.path.join(data_folder, uploaded_file.name)
-        if os.path.exists(file_path):
-            os.remove(file_path)
-
-        with open(file_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        st.success(f"File '{os.path.basename(file_path)}' uploaded successfully! Refresh the page to see updated file list.")
-
-# List of Files in the right column
-with right_column:
-    st.subheader("Files in Data Folder")
+# Helper function to list files
+def list_files():
+    """
+    List all files in the data folder, excluding certain system files and Jupyter notebook checkpoints.
+    Returns a DataFrame with file names and their upload dates.
+    """
     files = [f for f in os.listdir(data_folder) if f not in ['.DS_Store', '.ipynb_checkpoints'] and not f.endswith('.ipynb')]
-    if files:
-        file_data = []
-        for file in files:
-            file_path = os.path.join(data_folder, file)
-            if os.path.isfile(file_path):
-                num_lines = sum(1 for line in open(file_path)) if file.endswith(".csv") else 'N/A'
-                upload_time = datetime.fromtimestamp(os.path.getctime(file_path)).strftime("%Y-%m-%d %H:%M:%S")
-                file_data.append((file, num_lines, upload_time))
+    file_data = []
+    for file in files:
+        file_path = os.path.join(data_folder, file)
+        if os.path.isfile(file_path):
+            upload_time = datetime.fromtimestamp(os.path.getctime(file_path)).strftime("%Y-%m-%d %H:%M:%S")
+            file_data.append((file, upload_time))
+    return pd.DataFrame(file_data, columns=["File Name", "Upload Date"]) if file_data else None
 
-        # Display files as a DataFrame
-        file_df = pd.DataFrame(file_data, columns=["File Name", "Number of Lines", "Upload Date"])
-        st.dataframe(file_df, height=600, use_container_width=True)
+# Two-column layout
+left_column, right_column = st.columns([1, 1])
+
+# List of Files in the left column
+with right_column:
+    st.header("Files in Data Folder")
+    file_df = list_files()
+    if file_df is not None:
+        # Sort the DataFrame by "Upload Date" in descending order
+        file_df = file_df.sort_values(by="Upload Date", ascending=False)
+        st.dataframe(file_df, height=500, use_container_width=True, hide_index=True)
     else:
         st.write("No files uploaded yet.")
 
-# File Delete Functionality
+    if st.button("Refresh Filelist"):
+        selected_file = None
+        st.rerun()
+
+# File Upload in the right column
+with right_column:
+    st.header("Upload New File")
+    uploaded_files = st.file_uploader("Choose CSV or Excel files", type=["csv", "xlsx"], accept_multiple_files=True)
+    if uploaded_files:
+        for uploaded_file in uploaded_files:
+            file_path = os.path.join(data_folder, uploaded_file.name)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            with open(file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+        st.success("Files uploaded successfully!")
+        if st.button("Refresh Ramona Filelist"):
+            st.rerun()
+        if st.button("Process new files"):
+            st.session_state.tl = functions.build_tl()
+            st.session_state.adyenlinks = functions.load_adyen_links()
+            st.session_state.all_invoice_lines = functions.get_ev_invoice_lines()
+            functions.initialize_session_state()
+
+if 'rerun_trigger' in st.session_state:
+    del st.session_state['rerun_trigger']
+
+# Add the download button at the bottom of the right column
+with right_column:
+    st.header("Download All Files")
+    date_stamp = datetime.now().strftime("%Y%m%d")
+    st.download_button(
+        label="Download All Files",
+        data=functions.create_zip_file(),
+        file_name=f"all_files_{date_stamp}_{config.app_name}.zip",
+        mime="application/zip"
+    )
+
 with left_column:
-    st.subheader("Delete Files")
-    if files:
-        delete_file = st.selectbox("Select a file to delete", sorted(files))
-        if st.button("Delete File"):
-            os.remove(os.path.join(data_folder, delete_file))
-            st.success(f"File '{delete_file}' deleted successfully!")
-    else:
-        st.write("No files available for deletion.")
+    functions.required_files_description(config.required_files_description)
 

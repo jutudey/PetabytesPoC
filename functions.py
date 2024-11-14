@@ -1,10 +1,15 @@
-import datetime
 import numpy as np
-import pandas as pd
 import streamlit as st
+import config
+import sqlite3
+import pandas as pd
 from PIL import Image
 import re
 import os
+import datetime
+import zipfile
+from io import BytesIO
+import zipfile
 from pandas.api.types import (
     is_categorical_dtype,
     is_datetime64_any_dtype,
@@ -18,17 +23,16 @@ from pandas.api.types import (
 #----------------------------------------------------
 
 def set_page_definitition():
-  app_name = "Petabytes PoC v0.1"
+    app_name = config.app_name
 
-  # Loading Image using PIL
-  icon = Image.open('content/Subsidiary Salmon Logo.png')
+    # Loading Image using PIL
+    icon = Image.open('content/Subsidiary Salmon Logo.png')
 
-  # Enable wide mode and set light theme and add tab icon
-  st.set_page_config(layout="wide", page_title=app_name, page_icon=icon, initial_sidebar_state="expanded")
-  # st.set_page_config(layout="wide", page_title=app_name, page_icon=":material/sound_detection_dog_barking:", initial_sidebar_state="expanded")
+    # Enable wide mode and set light theme and add tab icon
+    st.set_page_config(layout="wide", page_title=app_name, page_icon=icon, initial_sidebar_state="expanded")
+    # st.set_page_config(layout="wide", page_title=app_name, page_icon=":material/sound_detection_dog_barking:", initial_sidebar_state="expanded")
 
-
-  return app_name
+    return app_name
 
 def initialize_session_state():
 
@@ -64,6 +68,79 @@ def normalize_id(id_value):
         return id_value
     else:
         raise ValueError(f"Invalid ID format for value: {id_value}")
+
+#----------------------------------------------------
+# File Management
+#----------------------------------------------------
+
+def load_newest_file(filename_prefix):
+    folder_path = "data"
+    try:
+        files = os.listdir(folder_path)
+        source_files = [file for file in files if file.startswith(filename_prefix)]
+        if source_files:
+            highest_file = max(source_files)
+            print(highest_file)
+            file_path = os.path.join(folder_path, highest_file)
+            if highest_file.endswith(".csv"):
+                df = pd.read_csv(file_path, low_memory=False)
+                return df
+            elif highest_file.endswith(".xlsx"):
+                df = pd.read_excel(file_path)
+                return df
+    except FileNotFoundError:
+        print(f"The folder '{folder_path}' does not exist.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+def get_newest_filename(filename_prefix):
+    folder_path = "data"
+    try:
+        files = os.listdir(folder_path)
+        source_files = [file for file in files if file.startswith(filename_prefix)]
+        if source_files:
+            highest_file = max(source_files)
+            # print(highest_file)
+            file_path = os.path.join(folder_path, highest_file)
+
+            if highest_file.endswith(".csv"):
+                df = pd.read_csv(file_path, low_memory=False)
+
+                return highest_file
+            elif highest_file.endswith(".xlsx"):
+                df = pd.read_excel(file_path)
+                return highest_file
+    except FileNotFoundError:
+        print(f"The folder '{folder_path}' does not exist.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+# Function to create a zip file of all files in the data folder
+def create_zip_file():
+    """
+    Create a zip file containing all files in the data folder.
+    Returns a BytesIO object containing the zip file.
+    """
+    data_folder = 'data'
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as zip_file:
+        for file in os.listdir(data_folder):
+            file_path = os.path.join(data_folder, file)
+            if os.path.isfile(file_path):
+                zip_file.write(file_path, os.path.basename(file_path))
+    zip_buffer.seek(0)
+    return zip_buffer
+
+def required_files_description(required_files_description):
+    st.header('Required Files')
+    st.write(f"In order to work properly the application requires up-to-date versions of the following files:")
+
+    for file_description in required_files_description:
+        st.markdown("##### " + file_description[0])
+        st.write('File name prefix: "' + file_description[1] + '"')
+        st.write('Newest file uploaded: ' + str(get_newest_filename(file_description[2])))
+        with st.expander('Where to find the file', expanded=False):
+            st.write(file_description[3])
 
 
 
