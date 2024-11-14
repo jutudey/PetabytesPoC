@@ -53,22 +53,12 @@ with right_column:
 # File Upload in the right column
 with right_column:
     st.header("Upload New File")
-    uploaded_files = st.file_uploader("Choose CSV or Excel files", type=["csv", "xlsx"], accept_multiple_files=True)
-    if uploaded_files:
-        for uploaded_file in uploaded_files:
-            file_path = os.path.join(data_folder, uploaded_file.name)
-            if os.path.exists(file_path):
-                os.remove(file_path)
-            with open(file_path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
-        st.success("Files uploaded successfully!")
-        if st.button("Refresh Ramona Filelist"):
-            st.rerun()
-        if st.button("Process new files"):
-            st.session_state.tl = functions.build_tl()
-            st.session_state.adyenlinks = functions.load_adyen_links()
-            st.session_state.all_invoice_lines = functions.get_ev_invoice_lines()
-            functions.initialize_session_state()
+    functions.upload_file()
+
+    if st.button("Refresh Filelist", key="rerun_trigger"):
+        st.rerun()
+    if st.button("Process new files"):
+        functions.initialize_session_state("force_load")
 
 if 'rerun_trigger' in st.session_state:
     del st.session_state['rerun_trigger']

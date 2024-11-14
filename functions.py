@@ -1,7 +1,7 @@
 import numpy as np
 import streamlit as st
+import functions as functions
 import config
-import sqlite3
 import pandas as pd
 from PIL import Image
 import re
@@ -34,21 +34,29 @@ def set_page_definitition():
 
     return app_name
 
-def initialize_session_state():
+def initialize_session_state(force_load=None):
+
+    if force_load:
+        st.session_state.all_invoice_lines = prepare_invoice_lines()
+        st.session_state.all_payments = extract_tl_Payments()
 
     try:
         # Collect Invoice Lines
         if 'all_invoice_lines' not in st.session_state:
             print("Running Invoice Lines function...")
+            st.session_state.all_invoice_lines = None
             st.session_state.all_invoice_lines = prepare_invoice_lines()
 
         # Collect Payments
         if 'all_payments' not in st.session_state:
             print("Running Invoice Lines function...")
+            st.session_state.all_payments = None
             st.session_state.all_payments = extract_tl_Payments()
+
+
     except TypeError:
         st.warning("Please upload the required files to proceed.")
-        pass
+
 
 
 def normalize_id(id_value):
@@ -79,7 +87,7 @@ def normalize_id(id_value):
 #----------------------------------------------------
 
 def load_newest_file(filename_prefix):
-    folder_path = "data"
+    folder_path = config.data_folder
     try:
         files = os.listdir(folder_path)
         source_files = [file for file in files if file.startswith(filename_prefix)]
@@ -99,7 +107,7 @@ def load_newest_file(filename_prefix):
         print(f"An error occurred: {e}")
 
 def get_newest_filename(filename_prefix):
-    folder_path = "data"
+    folder_path = config.data_folder
     try:
         files = os.listdir(folder_path)
         source_files = [file for file in files if file.startswith(filename_prefix)]
@@ -126,7 +134,7 @@ def create_zip_file():
     Create a zip file containing all files in the data folder.
     Returns a BytesIO object containing the zip file.
     """
-    data_folder = 'data'
+    data_folder = config.data_folder
     zip_buffer = BytesIO()
     with zipfile.ZipFile(zip_buffer, "w") as zip_file:
         for file in os.listdir(data_folder):
@@ -143,10 +151,28 @@ def required_files_description(required_files_description):
     for file_description in required_files_description:
         st.markdown("##### " + file_description[0])
         st.write('File name prefix: "' + file_description[1] + '"')
-        st.write('Newest file uploaded: ' + str(get_newest_filename(file_description[2])))
+
+        newest_file = get_newest_filename(file_description[2])
+
+        if newest_file is None:
+            st.markdown("<span style='color:red'>Not yet uploaded</span>", unsafe_allow_html=True)
+        else:
+            st.write('Newest file uploaded: ' + str(newest_file))
+
         with st.expander('Where to find the file', expanded=False):
             st.write(file_description[3])
 
+def upload_file():
+    data_folder = config.data_folder
+    uploaded_files = st.file_uploader("Choose CSV or Excel files", type=["csv", "xlsx"], accept_multiple_files=True)
+    if uploaded_files:
+        for uploaded_file in uploaded_files:
+            file_path = os.path.join(data_folder, uploaded_file.name)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            with open(file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+        st.success("Files uploaded successfully!")
 
 
 #----------------------------------------------------
@@ -154,7 +180,7 @@ def required_files_description(required_files_description):
 #----------------------------------------------------
 
 def load_newest_file(filename_prefix):
-    folder_path = "data"
+    folder_path = config.data_folder
     try:
         files = os.listdir(folder_path)
         invoice_files = [file for file in files if file.startswith(filename_prefix)]
