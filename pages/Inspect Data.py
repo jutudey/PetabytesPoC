@@ -13,50 +13,50 @@ with st.spinner('Loading and preparing data...'):
 # define 2 streamlit tabs
 raw_data_tab, invoice_lines_tab = st.tabs(["Inspect the source files", "Inspect the processed Invoice Lines Data"])
 
-with raw_data_tab:
-    files_for_analysis = [[sublist[0], sublist[2]] for sublist in config.required_files_description]
-    files_for_analysis = pd.DataFrame(files_for_analysis, columns=['File Name', 'filename_prefix'])
-
-    def safe_get_newest_filename(value):
-        result = functions.get_newest_filename(value)
-        return result if result else "Not uploaded yet"
-
-    files_for_analysis['latest_uploaded_file'] = files_for_analysis.iloc[:, 1].apply(safe_get_newest_filename)
-    # st.dataframe(files_for_analysis)
-
-    unique_file_names = files_for_analysis['File Name'].unique()
-    selected_file_name = st.selectbox("Select a File Name", unique_file_names)
-
-    latest_file = files_for_analysis.loc[
-        files_for_analysis['File Name'] == selected_file_name, 'latest_uploaded_file'
-    ].values[0]
-
-    folder_path = 'data/'
-
-    if latest_file == "Not uploaded yet":
-        st.warning("The file has not been uploaded yet.")
-    else:
-        file_path = os.path.join(folder_path, latest_file)
-
-        if latest_file.endswith('.csv'):
-            df = pd.read_csv(file_path)
-            # st.write("CSV file loaded successfully.")
-            st.header(latest_file)
-            st.dataframe(df, hide_index=True)
-        elif latest_file.endswith('.xlsx'):
-            df = pd.read_excel(file_path)
-            # st.write("Excel file loaded successfully.")
-            st.header(latest_file)
-            st.dataframe(df, hide_index=True)
-        else:
-            st.error("The file format is not supported.")
+# with raw_data_tab:
+#     files_for_analysis = [[sublist[0], sublist[2]] for sublist in config.required_files_description]
+#     files_for_analysis = pd.DataFrame(files_for_analysis, columns=['File Name', 'filename_prefix'])
+#
+#     def safe_get_newest_filename(value):
+#         result = functions.get_newest_filename(value)
+#         return result if result else "Not uploaded yet"
+#
+#     files_for_analysis['latest_uploaded_file'] = files_for_analysis.iloc[:, 1].apply(safe_get_newest_filename)
+#     # st.dataframe(files_for_analysis)
+#
+#     unique_file_names = files_for_analysis['File Name'].unique()
+#     selected_file_name = st.selectbox("Select a File Name", unique_file_names)
+#
+#     latest_file = files_for_analysis.loc[
+#         files_for_analysis['File Name'] == selected_file_name, 'latest_uploaded_file'
+#     ].values[0]
+#
+#     folder_path = 'data/'
+#
+#     if latest_file == "Not uploaded yet":
+#         st.warning("The file has not been uploaded yet.")
+#     else:
+#         file_path = os.path.join(folder_path, latest_file)
+#
+#         if latest_file.endswith('.csv'):
+#             df = pd.read_csv(file_path)
+#             # st.write("CSV file loaded successfully.")
+#             st.header(latest_file)
+#             st.dataframe(df, hide_index=True)
+#         elif latest_file.endswith('.xlsx'):
+#             df = pd.read_excel(file_path)
+#             # st.write("Excel file loaded successfully.")
+#             st.header(latest_file)
+#             st.dataframe(df, hide_index=True)
+#         else:
+#             st.error("The file format is not supported.")
 
 with invoice_lines_tab:
     df = st.session_state.all_invoice_lines
 
-    if df is None:
-        df = functions.prepare_invoice_lines()
-        st.session_state['df'] = df
+    # if df is None:
+    #     df = functions.merge_invoice_lines_and_payments()
+    #     st.session_state['df'] = df
 
     st.title("️🔍  Inspect the Invoice Lines Data")
 

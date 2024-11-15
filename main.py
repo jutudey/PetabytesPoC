@@ -11,6 +11,7 @@ st.title("Petabytes PoC")
 with st.spinner('Loading and preparing data...'):
     functions.initialize_session_state()
 
+
 if st.button("I want to upload more files"):
     col1, col2 = st.columns([3, 1])
 

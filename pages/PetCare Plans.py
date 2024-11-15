@@ -14,6 +14,9 @@ with st.spinner('Loading and preparing data...'):
 invoice_lines = st.session_state.all_invoice_lines
 payments = st.session_state.all_payments
 
+# st.dataframe(payments)
+
+
 st.sidebar.subheader("📃  Date Range")
 
 date_options = [

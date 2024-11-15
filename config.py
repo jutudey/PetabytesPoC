@@ -3,7 +3,7 @@
 # this page contains the configuration for the app
 
 
-app_name = "Petabytes v0.2"
+app_name = "Petabytes v0.3"
 
 data_folder = 'data'
 
@@ -31,3 +31,7 @@ required_files_description = [['ezyVet Invoice Lines',
                                    'pet-care-plans-',
                                    'Go to VERA Toolbox https://app.gardenvets.com/adad4b9d-8ad5-4ef4-9f3f-7916b0850882/reports/report-list and click on "PetCare Plans"]']
                                   ]
+
+# Filename Prefix
+invoice_lines_prefix = 'Invoice Lines Report-'
+non_approved_invoice_lines_prefix = 'evNonApprovedInvoiceLines-'

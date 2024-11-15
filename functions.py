@@ -34,23 +34,23 @@ def set_page_definitition():
 
     return app_name
 
-def initialize_session_state(force_load=None):
+def initialize_session_state():
 
-    if force_load:
-        st.session_state.all_invoice_lines = prepare_invoice_lines()
-        st.session_state.all_payments = extract_tl_Payments()
+    # if force_load:
+    #     st.session_state.all_invoice_lines = merge_invoice_lines_and_payments()
+    #     st.session_state.all_payments = extract_tl_Payments()
 
     try:
         # Collect Invoice Lines
         if 'all_invoice_lines' not in st.session_state:
             print("Running Invoice Lines function...")
-            st.session_state.all_invoice_lines = None
-            st.session_state.all_invoice_lines = prepare_invoice_lines()
+            # st.session_state.all_invoice_lines = None
+            st.session_state.all_invoice_lines = merge_invoice_lines_and_payments()
 
         # Collect Payments
         if 'all_payments' not in st.session_state:
-            print("Running Invoice Lines function...")
-            st.session_state.all_payments = None
+            print("Running Payments function...")
+            # st.session_state.all_payments = None
             st.session_state.all_payments = extract_tl_Payments()
 
 
@@ -215,13 +215,17 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         return df
 
     df = df.copy()
+    print(df.info())
 
     # Try to convert datetimes into a standard format (datetime, no timezone)
     for col in df.columns:
         if is_object_dtype(df[col]):
             try:
-                df[col] = pd.to_datetime(df[col])
-            except Exception:
+                # Attempt to convert to datetime with a specific format
+                df[col] = pd.to_datetime(df[col], format='%Y-%m-%d %H:%M:%S', errors='coerce')
+            except Exception as e:
+                # You can optionally log or print the exception for debugging
+                print(f"Could not convert column {col}: {e}")
                 pass
 
         if is_datetime64_any_dtype(df[col]):
@@ -393,37 +397,46 @@ def get_date_range(selected_option, custom_start=None, custom_end=None):
 
     return start_date, end_date
 
-def prepare_invoice_lines():
-    print("Running Invoice Lines script....")
-    # import data lines
-    invoice_lines_filename_prefix = "Invoice Lines Report-"
+def prepare_invoice_lines(filename_prefix):
+    """
+    Prepares the invoice lines data by loading the newest file, normalizing IDs, converting date formats,
+    cleaning data, categorizing product groups, and adding pet care plan information.
 
+    Returns:
+        pd.DataFrame: The prepared invoice lines DataFrame.
+    """
+    print("Running Invoice Lines script....")
+
+    # Define the filename prefix for invoice lines
+    invoice_lines_filename_prefix = filename_prefix
+
+    # Load the newest file with the given prefix
     df = load_newest_file(invoice_lines_filename_prefix)
 
+    # Normalize the 'Animal Code' column
     df['Animal Code'] = df['Animal Code'].apply(normalize_id)
 
-
-    # Convert 'Invoice Date' from string to datetime format
+    # Convert 'Invoice Date' and 'Invoice Line Date: Created' from string to datetime format
     df['Invoice Date'] = pd.to_datetime(df['Invoice Date'], format='%d-%m-%Y')
     df['Invoice Line Date: Created'] = pd.to_datetime(df['Invoice Line Date: Created'], format='%d-%m-%Y')
+    df['Invoice Line Date: Last Modified'] = pd.to_datetime(df['Invoice Line Date: Last Modified'], format='%d-%m-%Y')
+    df['Invoice Line Date'] = pd.to_datetime(df['Invoice Line Date'], format='%d-%m-%Y')
 
-    # Data Cleaning
+    # Data Cleaning: Remove rows with specific values in 'Type', 'Product Name', and 'Client Contact Code'
     df = df[df['Type'] != 'Header']
     df = df[df['Product Name'] != 'Subscription Fee']
     df = df[df['Product Name'] != 'Cancellation Fee']
     df = df[df['Client Contact Code'] != 'ezyVet']
 
-    # Change miscategorised Meloxicam and Methadone away from Consultations
-    df['Product Group'] = df.apply(lambda row: "Medication - Miscategorised " if row[
-                                                                                     'Product Name'] == "(1) Includes: Meloxicam and Methadone" else
-    row['Product Group'], axis=1)
+    # Change miscategorized Meloxicam and Methadone away from Consultations
+    df['Product Group'] = df.apply(lambda row: "Medication - Miscategorised " if row['Product Name'] == "(1) Includes: Meloxicam and Methadone" else row['Product Group'], axis=1)
 
     # Set 'Medication' for medication groups
     medication_groups = ["Medication - Oral", "Medication - Injectable", "Medication - Flea & Worm",
                          "Medication - Topical", "Anaesthesia", "Medication - Miscategorised", "Medication - Other"]
     df['reporting_categories'] = df['Product Group'].apply(lambda x: "Medication" if x in medication_groups else None)
 
-    # Set 'other categories' , without overwriting existing non-null values
+    # Set 'other categories' without overwriting existing non-null values
     vaccination_groups = ["Vaccinations", "Vaccine Stock"]
     df['reporting_categories'] = df.apply(
         lambda row: "Vaccinations" if row['Product Group'] in vaccination_groups else row['reporting_categories'],
@@ -455,7 +468,7 @@ def prepare_invoice_lines():
         lambda row: "PTS & Cremations" if row['Product Group'] in pts else row['reporting_categories'], axis=1)
     df['reporting_categories'] = df['reporting_categories'].fillna("Misc")
 
-    # Categorise 'Created By'
+    # Categorize 'Created By' into Vets, COPS, Nurses, and Others
     vets = [
         "Amy Gaines", "Kate Dakin", "Ashton-Rae Nash", "Sarah Halligan",
         "Hannah Brightmore", "Kaitlin Austin", "James French", "Joshua Findlay", "Andrew Hunt", "Georgia Cleaton",
@@ -476,12 +489,23 @@ def prepare_invoice_lines():
     df['created_by_category'] = df['Created By'].apply(
         lambda x: 'Vets' if x in vets else ('COPS' if x in cops else ('Nurses' if x in nurses else 'Other')))
 
-    # # Push the filtered DataFrame to session state
-    # st.session_state['df'] = df
+    if filename_prefix == config.invoice_lines_prefix:
+    #     create a new column for approval status and set it to True
+        df['Approved'] = True
+    else:
+        df['Approved'] = False
 
+    # Add pet care plan information to the invoice lines
     df = add_petcareplan_to_invoice_lines(df)
 
     return df
+
+def merge_invoice_lines_and_payments():
+    approved_invoice_lines = functions.prepare_invoice_lines(config.invoice_lines_prefix)
+    non_approved_invoice_lines = functions.prepare_invoice_lines(config.non_approved_invoice_lines_prefix)
+
+    all_invoice_lines = pd.concat([approved_invoice_lines, non_approved_invoice_lines], ignore_index=True)
+    return all_invoice_lines
 
 def load_petcare_plans():
     filename_prefix = "pet-care-plans-"
@@ -732,7 +756,7 @@ def extract_tl_Payments():
 
     payments['tl_CustomerName'] = payments['Owner First Name'] +" " + payments['Owner Last Name']
     payments['tl_PetName'] = payments['Animal Name']
-    print("Convertig tl_Date to date format!")
+    print("Converting tl_Date to date format!")
     payments['tl_Date'] = pd.to_datetime(payments['tl_Date'])
 
     # Drop all columns after 'tl_Comment'
@@ -743,7 +767,7 @@ def extract_tl_Payments():
     # return the aggregated DataFrame
 
     payments = add_petcareplan_to_payments(payments)
-    print(payments.info())
+    # print(payments.info())
     return payments
 
 def get_ezyvet_pet_details(pet_id=None):
