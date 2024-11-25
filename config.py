@@ -9,7 +9,7 @@ data_folder = 'data'
 
 required_files_description = [['ezyVet Invoice Lines',
                                    'Invoice Lines Report',
-                                   'Invoice Lines Report-',
+                                   'Invoice_Lines_Report-',
                                    'Go to ezyVet https://gvak.euw1.ezyvet.com/?recordclass=Reporting&recordid=0 and click on "Invoice Lines Report" in the File column'],
                                   ['ezyVet Animals Report',
                                    'Animals Report',
@@ -33,5 +33,5 @@ required_files_description = [['ezyVet Invoice Lines',
                                   ]
 
 # Filename Prefix
-invoice_lines_prefix = 'Invoice Lines Report-'
+invoice_lines_prefix = 'Invoice_Lines_Report-'
 non_approved_invoice_lines_prefix = 'evNonApprovedInvoiceLines-'

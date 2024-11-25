@@ -44,8 +44,9 @@ def initialize_session_state():
         # Collect Invoice Lines
         if 'all_invoice_lines' not in st.session_state:
             print("Running Invoice Lines function...")
-            # st.session_state.all_invoice_lines = None
+            st.session_state.all_invoice_lines = None
             st.session_state.all_invoice_lines = merge_invoice_lines_and_payments()
+
 
         # Collect Payments
         if 'all_payments' not in st.session_state:
@@ -143,6 +144,34 @@ def create_zip_file():
                 zip_file.write(file_path, os.path.basename(file_path))
     zip_buffer.seek(0)
     return zip_buffer
+
+def required_files_dashboard(required_files_description):
+    st.header('Required Files Status')
+    st.write(f"In order to work properly the application requires up-to-date versions of the following files:")
+
+    for file_name in required_files_description:
+        st.markdown("##### " + file_name[0])
+        # st.write('File name prefix: "' + file_name[1] + '"')
+
+        newest_file = get_newest_filename(file_name[2])
+
+        if newest_file is None:
+            st.markdown("<span style='color:red'>❌ Not yet uploaded</span>", unsafe_allow_html=True)
+        else:
+            st.write('✅ ' + str(newest_file))
+
+
+def age_of_file(required_files_description):
+    for file_description in required_files_description:
+        newest_file = get_newest_filename(file_description[2])
+        st.write(f"##### {file_description[2]}")
+        if newest_file is not None:
+            file_path = os.path.join(config.data_folder, newest_file)
+            file_age = datetime.datetime.fromtimestamp(os.path.getctime(file_path))
+            now = datetime.datetime.now()
+            age = now - file_age
+            print(f"{newest_file} is {age.days} days old")
+
 
 def required_files_description(required_files_description):
     st.header('Required Files')
