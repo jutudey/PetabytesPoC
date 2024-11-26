@@ -7,7 +7,7 @@ import functions
 functions.set_page_definitition()
 st.title("Petabytes PoC")
 
-with st.spinner('Loading and preparing data...'):
+with st.spinner('PLEASE WAIT - Loading and preparing data...'):
     functions.initialize_session_state()
 
 functions.required_files_dashboard(config.required_files_description)

@@ -442,17 +442,27 @@ def prepare_invoice_lines(filename_prefix):
     # Load the newest file with the given prefix
     df = load_newest_file(invoice_lines_filename_prefix)
 
+    # drop unnecessary columns
+    df = df.drop(columns=['Parent Line ID',
+                          'Invoice Line Date: Last Modified', 'Invoice Line Time: Last Modified',
+                          'Department ID', 'Department', 'Inventory Location', 'Invoice Line Reference',
+                          'Account', 'Salesperson is Vet', 'Consult ID', 'Surcharge Adjustment','Surcharge Name',
+                          'Rounding Adjustment', 'Rounding Name', 'Tax per Qty After Discount', 'Total Tax Amount',
+                          'Total Invoiced (excl)', 'Price After Discount(excl)', 'Total Invoiced (excl)',
+                          'Total Earned(excl)', 'Payment Terms'])
+
     # Normalize the 'Animal Code' column
     df['Animal Code'] = df['Animal Code'].apply(normalize_id)
 
     # Convert 'Invoice Date' and 'Invoice Line Date: Created' from string to datetime format
     df['Invoice Date'] = pd.to_datetime(df['Invoice Date'], format='%d-%m-%Y')
     df['Invoice Line Date: Created'] = pd.to_datetime(df['Invoice Line Date: Created'], format='%d-%m-%Y')
-    df['Invoice Line Date: Last Modified'] = pd.to_datetime(df['Invoice Line Date: Last Modified'], format='%d-%m-%Y')
+    # df['Invoice Line Date: Last Modified'] = pd.to_datetime(df['Invoice Line Date: Last Modified'], format='%d-%m-%Y')
     df['Invoice Line Date'] = pd.to_datetime(df['Invoice Line Date'], format='%d-%m-%Y')
 
     # Data Cleaning: Remove rows with specific values in 'Type', 'Product Name', and 'Client Contact Code'
     df = df[df['Type'] != 'Header']
+    df = df.drop(columns=['Type'])
     df = df[df['Product Name'] != 'Subscription Fee']
     df = df[df['Product Name'] != 'Cancellation Fee']
     df = df[df['Client Contact Code'] != 'ezyVet']
@@ -497,27 +507,34 @@ def prepare_invoice_lines(filename_prefix):
         lambda row: "PTS & Cremations" if row['Product Group'] in pts else row['reporting_categories'], axis=1)
     df['reporting_categories'] = df['reporting_categories'].fillna("Misc")
 
-    # Categorize 'Created By' into Vets, COPS, Nurses, and Others
-    vets = [
-        "Amy Gaines", "Kate Dakin", "Ashton-Rae Nash", "Sarah Halligan",
-        "Hannah Brightmore", "Kaitlin Austin", "James French", "Joshua Findlay", "Andrew Hunt", "Georgia Cleaton",
-        "Alan Robinson", "Sheldon Middleton", "Horatio Marchis", "Claire Hodgson", "Sara Jackson"
-    ]
-    cops = [
-        "System", "Jennifer Hammersley", "Hannah Pointon", "Sheila Rimes",
-        "Victoria Johnson", "Linda Spooner", "Amy Bache", "Katie Goodwin", "Catriona Bagnall", "Francesca James",
-        "Katie Jones", "Emily Freeman", "Esmee Holt", "Charlotte Middleton", "Maz Darley"
-    ]
-    nurses = [
-        "Zoe Van-Leth", "Amy Wood", "Charlotte Crimes", "Emma Foreman",
-        "Charlie Hewitt", "Hannah Brown", "Emily Castle", "Holly Davies", "Liz Hanson",
-        "Emily Smith", "Saffron Marshall", "Charlie Lea-Atkin", "Amber Smith", "Katie Jenkinson",
-        "Nicky Oakden"
-    ]
+    # # Categorize 'Created By' into Vets, COPS, Nurses, and Others
+    # vets = [
+    #     "Amy Gaines", "Kate Dakin", "Ashton-Rae Nash", "Sarah Halligan",
+    #     "Hannah Brightmore", "Kaitlin Austin", "James French", "Joshua Findlay", "Andrew Hunt", "Georgia Cleaton",
+    #     "Alan Robinson", "Sheldon Middleton", "Horatio Marchis", "Sara Jackson"
+    # ]
+    # locums = ["Laura Troth", "Megan Perkins", "Neil Jones", "Claire Hodgson", "Yifan Guo"]
+    #
+    # cops = [
+    #     "System", "Setup", "Jennifer Hammersley", "Hannah Pointon", "Sheila Rimes",
+    #     "Victoria Johnson", "Linda Spooner", "Amy Bache", "Katie Goodwin", "Catriona Bagnall", "Francesca James",
+    #     "Katie Jones", "Emily Freeman", "Esmee Holt", "Charlotte Middleton", "Maz Darley"
+    # ]
+    # nurses = [
+    #     "Zoe Van-Leth", "Amy Wood", "Charlotte Crimes", "Emma Foreman",
+    #     "Charlie Hewitt", "Hannah Brown", "Emily Castle", "Holly Davies", "Liz Hanson",
+    #     "Emily Smith", "Saffron Marshall", "Charlie Lea-Atkin", "Amber Smith", "Katie Jenkinson",
+    #     "Nicky Oakden"
+    # ]
+
 
     df['created_by_category'] = df['Created By'].apply(
-        lambda x: 'Vets' if x in vets else ('COPS' if x in cops else ('Nurses' if x in nurses else 'Other')))
-
+    lambda x: 'Vets' if x in config.vets else
+                ('COPS' if x in config.cops else
+                ('Nurses' if x in config.nurses else
+                ('Locums' if x in config.locums else
+                ('Students' if x in config.students else
+                 'Other')))))
     if filename_prefix == config.invoice_lines_prefix:
     #     create a new column for approval status and set it to True
         df['Approved'] = True

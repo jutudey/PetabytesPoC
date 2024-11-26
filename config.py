@@ -35,3 +35,28 @@ required_files_description = [['ezyVet Invoice Lines',
 # Filename Prefix
 invoice_lines_prefix = 'Invoice_Lines_Report-'
 non_approved_invoice_lines_prefix = 'evNonApprovedInvoiceLines-'
+
+# allocation of staff to roles
+vets = [
+    "Amy Gaines", "Kate Dakin", "Ashton-Rae Nash", "Sarah Halligan",
+    "Hannah Brightmore", "Kaitlin Austin", "James French", "Joshua Findlay", "Andrew Hunt", "Georgia Cleaton",
+    "Alan Robinson", "Sheldon Middleton", "Horatio Marchis", "Sara Jackson"
+]
+
+locums = ["Laura Troth", "Claire Hodgson"]
+
+students = ["Megan Perkins", "Neil Jones", "Yifan Guo"]
+
+cops = [
+    "System", "Setup", "Jennifer Hammersley", "Hannah Pointon", "Sheila Rimes",
+    "Victoria Johnson", "Linda Spooner", "Amy Bache", "Katie Goodwin", "Catriona Bagnall", "Francesca James",
+    "Katie Jones", "Emily Freeman", "Esmee Holt", "Charlotte Middleton", "Maz Darley"
+]
+
+nurses = [
+    "Zoe Van-Leth", "Amy Wood", "Charlotte Crimes", "Emma Foreman",
+    "Charlie Hewitt", "Hannah Brown", "Emily Castle", "Holly Davies", "Liz Hanson",
+    "Emily Smith", "Saffron Marshall", "Charlie Lea-Atkin", "Amber Smith", "Katie Jenkinson",
+    "Nicky Oakden"
+]
+

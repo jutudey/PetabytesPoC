@@ -64,7 +64,7 @@ if product_cat:
 
 st.title("📊 Comparison of Activities by Staff Members")
 st.subheader(
-    f"Showing data based on {len(df_filtered)} invoice lines from the period between {start_date.strftime('%B %d, %Y')} and {end_date.strftime('%B %d, %Y')}" )
+    f"Showing data based on {len(df_filtered)} invoice lines from the period between \n{start_date.strftime('%B %d, %Y')} and {end_date.strftime('%B %d, %Y')}" )
 
 # Create Line Chart
 if not df_filtered.empty:
