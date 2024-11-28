@@ -10,3 +10,7 @@ functions.set_page_definitition()
 functions.initialize_session_state()
 
 st.title("ezyVet Disipline")
+
+st.subheader("This page is under construction")
+
+
