@@ -43,17 +43,23 @@ def initialize_session_state():
     try:
         # Collect Invoice Lines
         if 'all_invoice_lines' not in st.session_state:
-            print("Running Invoice Lines function...")
+            print("Invoice lines not in session state - Running Invoice Lines function...")
             st.session_state.all_invoice_lines = None
             st.session_state.all_invoice_lines = merge_invoice_lines_and_payments()
+            print("Invoice lines processed and entered into Session State: ")
+            print(st.session_state.all_invoice_lines.info())
+        else:
+            print("Invoice lines already in session state - Skipping Invoice Lines function...")
 
-
-        # Collect Payments
+            # Collect Payments
         if 'all_payments' not in st.session_state:
-            print("Running Payments function...")
+            print("Payments  not in session state - Running Payments function...")
             # st.session_state.all_payments = None
             st.session_state.all_payments = extract_tl_Payments()
-
+            print("Payments file processed and entered into Session State: ")
+            print(st.session_state.all_payments.info())
+        else:
+            print("Payments already in session state - Skipping Payments function...")
 
     except TypeError:
         st.warning("Please upload the required files to proceed.")
@@ -87,26 +93,6 @@ def normalize_id(id_value):
 # File Management
 #----------------------------------------------------
 
-def load_newest_file(filename_prefix):
-    folder_path = config.data_folder
-    try:
-        files = os.listdir(folder_path)
-        source_files = [file for file in files if file.startswith(filename_prefix)]
-        if source_files:
-            highest_file = max(source_files)
-            print(highest_file)
-            file_path = os.path.join(folder_path, highest_file)
-            if highest_file.endswith(".csv"):
-                df = pd.read_csv(file_path, low_memory=False)
-                return df
-            elif highest_file.endswith(".xlsx"):
-                df = pd.read_excel(file_path)
-                return df
-    except FileNotFoundError:
-        print(f"The folder '{folder_path}' does not exist.")
-    except Exception as e:
-        print(f"An error occurred: {e}")
-
 def get_newest_filename(filename_prefix):
     folder_path = config.data_folder
     try:
@@ -114,7 +100,7 @@ def get_newest_filename(filename_prefix):
         source_files = [file for file in files if file.startswith(filename_prefix)]
         if source_files:
             highest_file = max(source_files)
-            # print(highest_file)
+            print(highest_file)
             file_path = os.path.join(folder_path, highest_file)
 
             if highest_file.endswith(".csv"):
@@ -193,7 +179,8 @@ def required_files_description(required_files_description):
 
 def upload_file():
     data_folder = config.data_folder
-    uploaded_files = st.file_uploader("Choose CSV or Excel files", type=["csv", "xlsx"], accept_multiple_files=True)
+    uploaded_files = st.file_uploader("Choose CSV or Excel files",
+                                      type=["csv", "xlsx"], accept_multiple_files=True)
     if uploaded_files:
         for uploaded_file in uploaded_files:
             file_path = os.path.join(data_folder, uploaded_file.name)
@@ -209,19 +196,21 @@ def upload_file():
 #----------------------------------------------------
 
 def load_newest_file(filename_prefix):
+    print("    Starting to look for the newest file with the prefix  " + filename_prefix)
     folder_path = config.data_folder
     try:
         files = os.listdir(folder_path)
         invoice_files = [file for file in files if file.startswith(filename_prefix)]
         if invoice_files:
             highest_file = max(invoice_files)
-            print(highest_file)
             file_path = os.path.join(folder_path, highest_file)
             if highest_file.endswith(".csv"):
                 df = pd.read_csv(file_path, low_memory=False)
+                print(f"    Found and loaded into dataframe: {highest_file}")
                 return df
             elif highest_file.endswith(".xlsx"):
                 df = pd.read_excel(file_path)
+                print(f"    Found and loaded into dataframe: {highest_file}")
                 return df
     except FileNotFoundError:
         print(f"The folder '{folder_path}' does not exist.")
@@ -426,6 +415,19 @@ def get_date_range(selected_option, custom_start=None, custom_end=None):
 
     return start_date, end_date
 
+def merge_invoice_lines_and_payments():
+    print("    Calling Invoice Script for approved invoice lines....")
+    approved_invoice_lines = functions.prepare_invoice_lines(config.invoice_lines_prefix)
+    print("    Completed Invoice Script for approved invoice lines....")
+
+    print("    Calling Invoice Script for NON-approved invoice lines....")
+    non_approved_invoice_lines = functions.prepare_invoice_lines(config.non_approved_invoice_lines_prefix)
+    print("    Completed Invoice Script for NON-approved invoice lines....")
+
+    print("    Merging Approved and NON-approved invoice lines....")
+    all_invoice_lines = pd.concat([approved_invoice_lines, non_approved_invoice_lines], ignore_index=True)
+    return all_invoice_lines
+
 def prepare_invoice_lines(filename_prefix):
     """
     Prepares the invoice lines data by loading the newest file, normalizing IDs, converting date formats,
@@ -434,7 +436,7 @@ def prepare_invoice_lines(filename_prefix):
     Returns:
         pd.DataFrame: The prepared invoice lines DataFrame.
     """
-    print("Running Invoice Lines script....")
+    print("        Running Invoice Lines script....")
 
     # Define the filename prefix for invoice lines
     invoice_lines_filename_prefix = filename_prefix
@@ -507,27 +509,6 @@ def prepare_invoice_lines(filename_prefix):
         lambda row: "PTS & Cremations" if row['Product Group'] in pts else row['reporting_categories'], axis=1)
     df['reporting_categories'] = df['reporting_categories'].fillna("Misc")
 
-    # # Categorize 'Created By' into Vets, COPS, Nurses, and Others
-    # vets = [
-    #     "Amy Gaines", "Kate Dakin", "Ashton-Rae Nash", "Sarah Halligan",
-    #     "Hannah Brightmore", "Kaitlin Austin", "James French", "Joshua Findlay", "Andrew Hunt", "Georgia Cleaton",
-    #     "Alan Robinson", "Sheldon Middleton", "Horatio Marchis", "Sara Jackson"
-    # ]
-    # locums = ["Laura Troth", "Megan Perkins", "Neil Jones", "Claire Hodgson", "Yifan Guo"]
-    #
-    # cops = [
-    #     "System", "Setup", "Jennifer Hammersley", "Hannah Pointon", "Sheila Rimes",
-    #     "Victoria Johnson", "Linda Spooner", "Amy Bache", "Katie Goodwin", "Catriona Bagnall", "Francesca James",
-    #     "Katie Jones", "Emily Freeman", "Esmee Holt", "Charlotte Middleton", "Maz Darley"
-    # ]
-    # nurses = [
-    #     "Zoe Van-Leth", "Amy Wood", "Charlotte Crimes", "Emma Foreman",
-    #     "Charlie Hewitt", "Hannah Brown", "Emily Castle", "Holly Davies", "Liz Hanson",
-    #     "Emily Smith", "Saffron Marshall", "Charlie Lea-Atkin", "Amber Smith", "Katie Jenkinson",
-    #     "Nicky Oakden"
-    # ]
-
-
     df['created_by_category'] = df['Created By'].apply(
     lambda x: 'Vets' if x in config.vets else
                 ('COPS' if x in config.cops else
@@ -542,16 +523,13 @@ def prepare_invoice_lines(filename_prefix):
         df['Approved'] = False
 
     # Add pet care plan information to the invoice lines
+    print("            Adding petcare plans to invoice lines....")
     df = add_petcareplan_to_invoice_lines(df)
+    print("            Completed petcare plans to invoice lines....")
 
+    print("        Completed Invoice Lines script and returned dataframe....")
     return df
 
-def merge_invoice_lines_and_payments():
-    approved_invoice_lines = functions.prepare_invoice_lines(config.invoice_lines_prefix)
-    non_approved_invoice_lines = functions.prepare_invoice_lines(config.non_approved_invoice_lines_prefix)
-
-    all_invoice_lines = pd.concat([approved_invoice_lines, non_approved_invoice_lines], ignore_index=True)
-    return all_invoice_lines
 
 def load_petcare_plans():
     filename_prefix = "pet-care-plans-"
@@ -626,7 +604,7 @@ def load_petcare_plans():
     return df
 
 def load_ezyvet_customers(customer_id=None):
-    filename_prefix = "Animals Report-"
+    filename_prefix = "Animals_Report-"
 
     # load data into df
     df = load_newest_file(filename_prefix)
@@ -639,11 +617,9 @@ def load_ezyvet_customers(customer_id=None):
         return df
 
 def add_petcareplan_to_invoice_lines(invoice_lines_df):
+    print("           Adding petcare plan id to invoice lines... ")
     petcare_plans = load_petcare_plans()
 
-    print("Adding petcare plan id to invoice lines... ")
-
-    # Assuming invoice_lines and petcare_plans are your dataframes
     # Create a lookup function to get the product code from petcare_plans
     def lookup_petcare_plan(animal_code):
         matching_row = petcare_plans[petcare_plans['EvPetId'] == animal_code]
@@ -653,7 +629,7 @@ def add_petcareplan_to_invoice_lines(invoice_lines_df):
 
     # Apply the lookup function to each row in invoice_lines
     invoice_lines_df['petcare_plan_in_vera'] = invoice_lines_df['Animal Code'].apply(lookup_petcare_plan)
-
+    print("           Completed adding petcare plan id to invoice lines... ")
     return invoice_lines_df
 
 def add_petcareplan_to_payments(payments_df):
@@ -817,7 +793,7 @@ def extract_tl_Payments():
     return payments
 
 def get_ezyvet_pet_details(pet_id=None):
-    filename_prefix = "Animals Report-"
+    filename_prefix = "Animals_Report-"
 
     # load data into df
     df = load_newest_file(filename_prefix)
