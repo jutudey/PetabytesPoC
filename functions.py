@@ -64,8 +64,6 @@ def initialize_session_state():
     except TypeError:
         st.warning("Please upload the required files to proceed.")
 
-
-
 def normalize_id(id_value):
     if id_value == "nan":
         return np.nan
