@@ -43,12 +43,6 @@ st.subheader(":hash:   Number of non-approved invoices by staff member")
 fig = px.bar(df1, x='Created By', y='Total Invoices', color='Created By')
 st.plotly_chart(fig)
 
-# # group by Created by and count unique invoice numbers
-# df3 = df.groupby('Created By').agg({'Invoice #': 'nunique'}).reset_index()
-# df3.columns = ['Created By', 'Total Invoices']
-# # create a plotly express bar chart where x is the created by, y is the total invoices
-# fig = px.bar(df3, x='Created By', y='Total Invoices')
-# st.plotly_chart(fig)
 
 
 # group by Invoice # and sum the total invoiced amount
@@ -59,5 +53,6 @@ st.subheader(":pound:   Total Invoice Amount in non-approved invoices by staff m
 fig = px.bar(df2, x='Created By', y='Total Invoiced (incl)', color='Created By')
 st.plotly_chart(fig)
 
-
+st.subheader("📊   Non-Approved Invoice Lines")
+df
 

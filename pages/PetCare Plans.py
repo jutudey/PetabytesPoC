@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import datetime
 import functions
-import altair as alt
+import plotly.express as px
 
 functions.set_page_definitition()
 st.title("📦  PetCare Plan Analysis")
@@ -41,140 +41,62 @@ start_date = pd.to_datetime(start_date)
 end_date = pd.to_datetime(end_date)
 
 st.sidebar.subheader("📦  PetCare Plans")
-#
-# product_cat = st.sidebar.multiselect(
-#     "Select Plans",
-#     sorted(invoice_lines["reporting_categories"].unique()),
-#     default=None
-# )
 
 product_cat = None
-
 petcareplan_to_display = st.sidebar.multiselect(
     "Select PetCare Plans",
     sorted(invoice_lines["petcare_plan_in_vera"].unique()),
     default=None
 )
 
+invoice_lines_grouped = invoice_lines.groupby(['Invoice Date', 'petcare_plan_in_vera'])['Product Cost'].sum().reset_index().round(2)
+# rename Invoice Date to Date
+invoice_lines_grouped.columns = ['Date', 'petcare_plan_in_vera', 'Cost']
+# invoice_lines_grouped
+payments_grouped = payments.groupby(['tl_Date', 'petcare_plan_in_vera'])['tl_Revenue'].sum().reset_index().round(2)
+# rename tl_Date to Date
+payments_grouped.columns = ['Date', 'petcare_plan_in_vera', 'Revenue']
+# payments_grouped
 
-# Checkbox to show detailed product information
-show_category_details = st.sidebar.checkbox("Show Category Details")
+# concatenate invoice_lines_grouped and payments_grouped by where Invoice Date = tl_Date and petcare_plan_in_vera = petcare_plan_in_vera
+merged_df = pd.merge(invoice_lines_grouped, payments_grouped, on=['Date', 'petcare_plan_in_vera'], how='inner')
+merged_df["month_year"] = merged_df['Date'].dt.to_period('M')
+# Filter the Invoice Lines to only include rows between the start and end dates
+merged_df = merged_df[(merged_df['Date'] >= start_date) & (merged_df['Date'] <= end_date)]
 
-# Tickboxes to include specific categories
-# include_vets = st.sidebar.checkbox("Include Vets", value=True)
-# include_nurses = st.sidebar.checkbox("Include Nurses", value=True)
-# include_cops = st.sidebar.checkbox("Include COPS", value=True)
-#
-include_vets = True
-include_nurses = True
-include_cops = True
-
-# Filter by selected Created By categories
-# categories_to_include = []
-# if include_vets:
-#     categories_to_include.append('Vets')
-# if include_nurses:
-#     categories_to_include.append('Nurses')
-# if include_cops:
-#     categories_to_include.append('COPS')
 
 # Filter by petcare plans if any are selected
 if petcareplan_to_display:
-    invoice_lines = invoice_lines[invoice_lines["petcare_plan_in_vera"].isin(petcareplan_to_display)]
-    payments = payments[payments["petcare_plan_in_vera"].isin(petcareplan_to_display)]
+    merged_df = merged_df[merged_df["petcare_plan_in_vera"].isin(petcareplan_to_display)]
+#     group merged_df by petcare_plan_in_vera and month and summarize the Cost and Revenue
+    merged_df = merged_df.groupby(['petcare_plan_in_vera', merged_df['month_year']]).agg({'Cost': 'sum', 'Revenue': 'sum'}).reset_index()
 
-# Filter the DataFrame to only include rows between the start and end dates
-invoice_lines_filtered = invoice_lines[(invoice_lines['Invoice Line Date: Created'] >= start_date) & (invoice_lines['Invoice Line Date: Created'] <= end_date)]
-payments_start_date = pd.to_datetime(start_date)
-payments_end_date = pd.to_datetime(end_date)
-
-payments_filtered = payments[
-    (payments['tl_Date'] >= payments_start_date) & (payments['tl_Date'] <= payments_end_date)
-]
-
-# Display the filtered DataFrame
-if not invoice_lines_filtered.empty:
-    st.subheader(f"Showing data based on {len(invoice_lines_filtered)} invoice lines from the period between {start_date.strftime('%B %d, %Y')} and {end_date.strftime('%B %d, %Y')}")
+#
 
 
-    if show_category_details:
-        # Show details by Product Name
-        chart_data2 = invoice_lines_filtered.groupby(['petcare_plan_in_vera', 'reporting_categories', 'Product Name'])['Standard Price(incl)'].sum().reset_index().round(2)
-        chart_data2.columns = ['petcare_plan_in_vera', 'reporting_categories', 'Product Name', 'Total Internal Cost']
-        chart2 = alt.Chart(chart_data2).mark_bar().encode(
-            x=alt.X('petcare_plan_in_vera:N', title='£ by PetCare Plans'),
-            y=alt.Y('Total Internal Cost:Q', title='Total Internal Cost'),
-            color='Product Name:N'
-        ).properties(
-            width=600,
-            height=500
-        )
-    else:
-        # Show by Category
-        chart_data2 = invoice_lines_filtered.groupby(['petcare_plan_in_vera', 'reporting_categories'])['Standard Price(incl)'].sum().reset_index().round(2)
-        chart_data2.columns = ['petcare_plan_in_vera', 'reporting_categories', 'Total Internal Cost']
-        chart2 = alt.Chart(chart_data2).mark_bar().encode(
-            x=alt.X('petcare_plan_in_vera:N', title='Count of Invoice Lines by PetCare Plans'),
-            y=alt.Y('Total Internal Cost:Q', title='Total Internal Cost'),
-            color='reporting_categories:N'
-        ).properties(
-            width=600,
-            height=500
-        )
+# Create a bar chart showing the total cost and revenue for each petcare plan
+fig = px.bar(merged_df, x='petcare_plan_in_vera', y=['Cost', 'Revenue'], barmode='group', title='Cost and Revenue per PetCare Plan ')
+st.plotly_chart(fig)
 
-        # # Show revenue
-        # chart_data3 = payments_filtered.groupby(['petcare_plan_in_vera'])[
-        #     'tl_Revenue'].sum().reset_index().round(2)
-        # chart_data3.columns = ['petcare_plan_in_vera', 'tl_Revenue']
-        # chart3 = alt.Chart(chart_data3).mark_bar().encode(
-        #     x=alt.X('petcare_plan_in_vera:N', title='Count of Invoice Lines by PetCare Plans'),
-        #     y=alt.Y('tl_Revenue:Q', title='Total Internal Cost'),
-        #     # color='reporting_categories:N'
-        # ).properties(
-        #     width=600,
-        #     height=500
-        # )
+# add a column to merged_df that calculates the profit
+merged_df['Profit'] = merged_df['Revenue'] - merged_df['Cost']
+merged_df['month_year'] = merged_df['month_year'].astype(str)
+# Create a line chart showing the profit for each petcare plan where the y axis is the profit and the x axis is the petcare plan. Each line should be colored based on the petcare_plan_in_vera
+fig = px.line(
+    merged_df,
+    x='month_year',
+    y='Profit',
+    color='petcare_plan_in_vera',
+    title='Profit over Time for Different Pet Care Plans',
+    labels={'month_year': 'Month-Year', 'Profit': 'Profit'}
+)
 
-        # Add a source column to differentiate the two DataFrames
-        payments_filtered['Source'] = 'Revenue'
-        invoice_lines_filtered['Source'] = 'Cost'
+st.plotly_chart(fig)
 
-        # Select the relevant columns and rename for consistency
-        df1 = payments_filtered[['petcare_plan_in_vera', 'tl_Revenue', 'Source']].rename(
-            columns={'tl_Revenue': 'Value'})
-        df2 = invoice_lines_filtered[['petcare_plan_in_vera', 'Standard Price(incl)', 'Source']].rename(
-            columns={'Standard Price(incl)': 'Value'})
-
-        # Concatenate the DataFrames
-        combined_df = pd.concat([df1, df2], ignore_index=True)
-
-        # Create the Altair bar chart with grouped bars
-        chart = alt.Chart(combined_df).mark_bar().encode(
-            x=alt.X('petcare_plan_in_vera:N', title='Petcare Plan in VERA', axis=alt.Axis(labelAngle=-45)),
-            y=alt.Y('Value:Q', title='Value'),
-            color=alt.Color('Source:N', title='Data Source'),
-            xOffset='Source:N',
-            tooltip=['petcare_plan_in_vera', 'Source', 'Value']
-        ).properties(
-            width=600,
-            height=400
-        )
-
-        # Display the chart in Streamlit
-        st.title("Comparison of Revenue and Cost  by Petcare Plan in VERA")
-        st.altair_chart(chart, use_container_width=True)
-
-    #
-    # st.altair_chart(chart2, use_container_width=True)
-    # st.altair_chart(chart3, use_container_width=True)
+merged_df
 
 
 
-    with st.expander("Show Invoice Line Details"):
-        # Content inside the expandable box
-        st.write("Here are the details for the enriched invoice lines:")
-        st.dataframe(invoice_lines_filtered)
 
 
-else:
-    st.warning("No data available for the selected filters.")
+
