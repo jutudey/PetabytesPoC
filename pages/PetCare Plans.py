@@ -74,29 +74,40 @@ if petcareplan_to_display:
 #
 
 
-# Create a bar chart showing the total cost and revenue for each petcare plan
-fig = px.bar(merged_df, x='petcare_plan_in_vera', y=['Cost', 'Revenue'], barmode='group', title='Cost and Revenue per PetCare Plan ')
-st.plotly_chart(fig)
+    # Create a bar chart showing the total cost and revenue for each petcare plan
+    fig = px.bar(merged_df, x='petcare_plan_in_vera', y=['Cost', 'Revenue'], barmode='group', title='Cost and Revenue per PetCare Plan ')
+    st.plotly_chart(fig)
 
-# add a column to merged_df that calculates the profit
-merged_df['Profit'] = merged_df['Revenue'] - merged_df['Cost']
-merged_df['month_year'] = merged_df['month_year'].astype(str)
-# Create a line chart showing the profit for each petcare plan where the y axis is the profit and the x axis is the petcare plan. Each line should be colored based on the petcare_plan_in_vera
-fig = px.line(
-    merged_df,
-    x='month_year',
-    y='Profit',
-    color='petcare_plan_in_vera',
-    title='Profit over Time for Different Pet Care Plans',
-    labels={'month_year': 'Month-Year', 'Profit': 'Profit'}
-)
+    # add a column to merged_df that calculates the profit
+    merged_df['Profit'] = merged_df['Revenue'] - merged_df['Cost']
+    merged_df['month_year'] = merged_df['month_year'].astype(str)
+    # Create a line chart showing the profit for each petcare plan where the y axis is the profit and the x axis is the petcare plan. Each line should be colored based on the petcare_plan_in_vera
+    fig = px.line(
+        merged_df,
+        x='month_year',
+        y='Profit',
+        color='petcare_plan_in_vera',
+        title='Profit over Time for Different Pet Care Plans',
+        labels={'month_year': 'Month-Year', 'Profit': 'Profit'}
+    )
 
-st.plotly_chart(fig)
+    st.plotly_chart(fig)
 
-merged_df
+    # add a tickbox that allows the user to choose whether to display the invoice lines and payments data
+    display_data = st.checkbox("Display Monthly summaries", value=False, key="display_data")
+    if display_data:
+        merged_df
 
+    display_data2 = st.checkbox("Display Invoice Lines and Payments details", value=False, key="display_data2")
+    if display_data2:
+        st.subheader('Invoice Lines')
+        invoice_lines = invoice_lines[invoice_lines["petcare_plan_in_vera"].isin(petcareplan_to_display)]
+        invoice_lines = invoice_lines[(invoice_lines['Invoice Date'] >= start_date) & (invoice_lines['Invoice Date'] <= end_date)]
+        invoice_lines
 
+        st.subheader('Payments from Vera')
 
-
-
+        payments = payments[payments["petcare_plan_in_vera"].isin(petcareplan_to_display)]
+        payments = payments[(payments['tl_Date'] >= start_date) & (payments['tl_Date'] <= end_date)]
+        payments
 
