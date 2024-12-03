@@ -3,7 +3,7 @@
 # this page contains the configuration for the app
 
 
-app_name = "Petabytes v0.4"
+app_name = "Petabytes v0.5"
 
 data_folder = 'data'
 
