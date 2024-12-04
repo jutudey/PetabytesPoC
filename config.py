@@ -3,7 +3,7 @@
 # this page contains the configuration for the app
 
 
-app_name = "Petabytes v0.5"
+app_name = "Petabytes v0.6"
 
 data_folder = 'data'
 
@@ -60,3 +60,9 @@ nurses = [
     "Nicky Oakden"
 ]
 
+cats = ["C1V", "C2V", "C3V"]
+dogs = ["D1V", "D2V", "D3V"]
+rabbits_ferrets = ["S1V", "S2V", "S3V"]
+small_furries = ["SF1", "SF2", "SF3"]
+complex_cases = ["CX1", "CX2", "CX3"]
+petcare_advanced = ['PCA']
