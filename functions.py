@@ -532,7 +532,6 @@ def prepare_invoice_lines(filename_prefix):
     # Convert 'Invoice Date' and 'Invoice Line Date: Created' from string to datetime format
     df['Invoice Date'] = pd.to_datetime(df['Invoice Date'], format='%d-%m-%Y')
     df['Invoice Line Date: Created'] = pd.to_datetime(df['Invoice Line Date: Created'], format='%d-%m-%Y')
-    # df['Invoice Line Date: Last Modified'] = pd.to_datetime(df['Invoice Line Date: Last Modified'], format='%d-%m-%Y')
     df['Invoice Line Date'] = pd.to_datetime(df['Invoice Line Date'], format='%d-%m-%Y')
 
     # Data Cleaning: Remove rows with specific values in 'Type', 'Product Name', and 'Client Contact Code'
@@ -594,6 +593,8 @@ def prepare_invoice_lines(filename_prefix):
         df['Approved'] = True
     else:
         df['Approved'] = False
+
+
 
     # Add pet care plan information to the invoice lines
     print("            Adding petcare plans to invoice lines....")
@@ -703,6 +704,17 @@ def add_petcareplan_to_invoice_lines(invoice_lines_df):
     # Apply the lookup function to each row in invoice_lines
     invoice_lines_df['petcare_plan_in_vera'] = invoice_lines_df['Animal Code'].apply(lookup_petcare_plan)
     print("           Completed adding petcare plan id to invoice lines... ")
+
+    # create a new column called "petcare_plan_group"
+    invoice_lines_df['petcare_plan_group'] = invoice_lines_df['petcare_plan_in_vera'].apply(
+    lambda x: 'Dogs' if x[:3] in config.dogs else
+          ('Cats' if x[:3] in config.cats else
+          ('Complex' if x[:3] in config.complex_cases else
+          ('Rabbits/Ferrets' if x[:3] in config.rabbits_ferrets else
+          ('Small Furries' if x[:3] in config.small_furries else
+           'Other')))))
+
+
     return invoice_lines_df
 
 def add_petcareplan_to_payments(payments_df):
